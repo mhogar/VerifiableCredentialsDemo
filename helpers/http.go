@@ -24,10 +24,6 @@ func SendErrorResponse(w http.ResponseWriter, status int, err string) {
 	})
 }
 
-func SendBadRequestResponse(w http.ResponseWriter, err string) {
-	SendErrorResponse(w, http.StatusBadRequest, err)
-}
-
 func SendInternalErrorResponse(w http.ResponseWriter) {
 	SendErrorResponse(w, http.StatusInternalServerError, "an internal error occurred")
 }

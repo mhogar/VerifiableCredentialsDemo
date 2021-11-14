@@ -10,9 +10,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
+	"vcd/common"
 )
 
-func SignResponse(keyURI string, res interface{}) ([]byte, error) {
+func SignCredential(keyURI string, res interface{}) ([]byte, error) {
 	//load private key
 	key, err := loadPrivateKeyFromFile(keyURI)
 	if err != nil {
@@ -26,8 +27,8 @@ func SignResponse(keyURI string, res interface{}) ([]byte, error) {
 	}
 
 	//hash and sign
-	sum := sha256.Sum256(bytes)
-	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, sum[:])
+	hash := sha256.Sum256(bytes)
+	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hash[:])
 	if err != nil {
 		return nil, ChainError("error signing hash", err)
 	}
@@ -35,9 +36,38 @@ func SignResponse(keyURI string, res interface{}) ([]byte, error) {
 	return sig, nil
 }
 
+func VerifyCredentialSignature(sig []byte, DID []byte, cred *common.VerifiableCredential) error {
+	//load public key
+	key, err := loadPublicKeyFromBytes(DID)
+	if err != nil {
+		return ChainError("error loading public key from DID", err)
+	}
+
+	//marshal credential as json
+	bytes, _ := json.Marshal(cred)
+
+	//hash and verify
+	hash := sha256.Sum256(bytes)
+	err = rsa.VerifyPKCS1v15(key, crypto.SHA256, hash[:], sig)
+	if err != nil {
+		return ChainError("error verifying signature", err)
+	}
+
+	return nil
+}
+
+func LoadKeyFromFile(filename string) ([]byte, error) {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, ChainError("error reading file", err)
+	}
+
+	return bytes, nil
+}
+
 func loadPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
 	//read file
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := LoadKeyFromFile(filename)
 	if err != nil {
 		return nil, ChainError("error reading private key file", err)
 	}
@@ -61,4 +91,26 @@ func loadPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
 	}
 
 	return rsaKey, nil
+}
+
+func loadPublicKeyFromBytes(bytes []byte) (*rsa.PublicKey, error) {
+	//parse PEM block
+	block, _ := pem.Decode(bytes)
+	if block == nil {
+		return nil, errors.New("error parsing PEM block")
+	}
+
+	//parse public cert
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, ChainError("error parsing certificate", err)
+	}
+
+	//verify key is RSA public key
+	key, ok := cert.PublicKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("key is not an RSA public key")
+	}
+
+	return key, nil
 }
