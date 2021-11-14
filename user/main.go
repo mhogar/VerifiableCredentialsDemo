@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"vcd/common"
 	"vcd/helpers"
 )
 
-func createVerifiableCredential() (*common.VerifiableCredential, error) {
+func createVerifiableCredential() error {
 	//load DID
-	DID, err := helpers.LoadKeyFromFile("keys/public.cert")
+	DID, err := helpers.LoadKeyFromFile("DID.cert")
 	if err != nil {
-		log.Fatal(err)
+		return helpers.ChainError("error loading DID certificate", err)
 	}
 
 	cred := common.VerifiableCredential{
@@ -24,9 +25,9 @@ func createVerifiableCredential() (*common.VerifiableCredential, error) {
 	}
 
 	//sign request
-	sig, err := helpers.SignCredential("keys/private.key", &cred)
+	sig, err := helpers.SignCredential("wallet/private.key", &cred)
 	if err != nil {
-		return nil, helpers.ChainError("error signing request", err)
+		return helpers.ChainError("error signing request", err)
 	}
 	cred.SubjectSignature = hex.EncodeToString(sig)
 
@@ -34,7 +35,7 @@ func createVerifiableCredential() (*common.VerifiableCredential, error) {
 	buffer, _ := helpers.EncodeJSON(&cred)
 	res, err := http.Post("http://localhost:8082/creds", "application/json", buffer)
 	if err != nil {
-		return nil, helpers.ChainError("error sending POST creds request", err)
+		return helpers.ChainError("error sending POST creds request", err)
 	}
 
 	defer res.Body.Close()
@@ -44,21 +45,23 @@ func createVerifiableCredential() (*common.VerifiableCredential, error) {
 		result := common.ErrorResponse{}
 		helpers.DecodeJSON(res.Body, &result)
 
-		return nil, helpers.ChainError("error from issuer service", errors.New(result.Error))
+		return helpers.ChainError("error from issuer service", errors.New(result.Error))
 	}
 
-	//parse credential
-	cred = common.VerifiableCredential{}
-	helpers.DecodeJSON(res.Body, &cred)
+	//-- save credential --
+	fmt.Println("Saving verifiable credential...")
 
-	return &cred, nil
+	f, _ := os.Create("wallet/vc.json")
+	defer f.Close()
+
+	f.ReadFrom(res.Body)
+
+	return nil
 }
 
 func main() {
-	cred, err := createVerifiableCredential()
+	err := createVerifiableCredential()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(*cred)
 }

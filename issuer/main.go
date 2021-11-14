@@ -25,17 +25,12 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//parse subject signature remove from credential
-	sig, err := hex.DecodeString(cred.SubjectSignature)
-	if err != nil {
-		log.Println(err)
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "invalid subject signature format")
-		return
-	}
+	//strip signature from credential
+	subjectSig := cred.SubjectSignature
 	cred.SubjectSignature = ""
 
 	//verify subject signature
-	err = helpers.VerifyCredentialSignature(sig, []byte(cred.SubjectDID), &cred)
+	err = helpers.VerifyCredentialSignature(cred.SubjectDID, subjectSig, &cred)
 	if err != nil {
 		log.Println(err)
 		helpers.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
@@ -45,8 +40,8 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	//TODO: verify request fields?
 
 	//add DID and create signature
-	cred.IssuerDID = "did:some_blockchain:block_id"
-	sig, err = helpers.SignCredential("keys/private.key", cred)
+	cred.IssuerDID = "blockchain/issuer.json"
+	sig, err := helpers.SignCredential("keys/private.key", cred)
 	if err != nil {
 		log.Println(err)
 		helpers.SendInternalErrorResponse(w)
@@ -64,6 +59,7 @@ func main() {
 	flag.Parse()
 
 	//setup routes
+	http.Handle("/", http.FileServer(http.Dir("./public")))
 	http.HandleFunc("/creds", handler)
 
 	//run the server

@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -36,9 +37,15 @@ func SignCredential(keyURI string, res interface{}) ([]byte, error) {
 	return sig, nil
 }
 
-func VerifyCredentialSignature(sig []byte, DID []byte, cred *common.VerifiableCredential) error {
+func VerifyCredentialSignature(DID string, sig string, cred *common.VerifiableCredential) error {
+	//decode signature
+	sigBytes, err := hex.DecodeString(sig)
+	if err != nil {
+		return ChainError("error decoding signature", err)
+	}
+
 	//load public key
-	key, err := loadPublicKeyFromBytes(DID)
+	key, err := loadPublicKeyFromBytes([]byte(DID))
 	if err != nil {
 		return ChainError("error loading public key from DID", err)
 	}
@@ -48,7 +55,7 @@ func VerifyCredentialSignature(sig []byte, DID []byte, cred *common.VerifiableCr
 
 	//hash and verify
 	hash := sha256.Sum256(bytes)
-	err = rsa.VerifyPKCS1v15(key, crypto.SHA256, hash[:], sig)
+	err = rsa.VerifyPKCS1v15(key, crypto.SHA256, hash[:], sigBytes)
 	if err != nil {
 		return ChainError("error verifying signature", err)
 	}
