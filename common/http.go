@@ -1,9 +1,8 @@
-package helpers
+package common
 
 import (
 	"encoding/json"
 	"net/http"
-	"vcd/common"
 )
 
 func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
@@ -19,7 +18,7 @@ func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
 }
 
 func SendErrorResponse(w http.ResponseWriter, status int, err string) {
-	SendJSONResponse(w, status, common.ErrorResponse{
+	SendJSONResponse(w, status, ErrorResponse{
 		Error: err,
 	})
 }

@@ -8,14 +8,13 @@ import (
 	"net/http"
 	"os"
 	"vcd/common"
-	"vcd/helpers"
 )
 
 func createVerifiableCredential() error {
 	//load DID
-	DID, err := helpers.LoadKeyFromFile("DID.cert")
+	DID, err := common.LoadKeyFromFile("DID.cert")
 	if err != nil {
-		return helpers.ChainError("error loading DID certificate", err)
+		return common.ChainError("error loading DID certificate", err)
 	}
 
 	cred := common.VerifiableCredential{
@@ -25,17 +24,17 @@ func createVerifiableCredential() error {
 	}
 
 	//sign request
-	sig, err := helpers.SignCredential("wallet/private.key", &cred)
+	sig, err := common.SignCredential("wallet/private.key", &cred)
 	if err != nil {
-		return helpers.ChainError("error signing request", err)
+		return common.ChainError("error signing request", err)
 	}
 	cred.SubjectSignature = hex.EncodeToString(sig)
 
 	//send request
-	buffer, _ := helpers.EncodeJSON(&cred)
+	buffer, _ := common.EncodeJSON(&cred)
 	res, err := http.Post("http://localhost:8082/creds", "application/json", buffer)
 	if err != nil {
-		return helpers.ChainError("error sending POST creds request", err)
+		return common.ChainError("error sending POST creds request", err)
 	}
 
 	defer res.Body.Close()
@@ -43,9 +42,9 @@ func createVerifiableCredential() error {
 	//handle error response
 	if res.StatusCode != http.StatusOK {
 		result := common.ErrorResponse{}
-		helpers.DecodeJSON(res.Body, &result)
+		common.DecodeJSON(res.Body, &result)
 
-		return helpers.ChainError("error from issuer service", errors.New(result.Error))
+		return common.ChainError("error from issuer service", errors.New(result.Error))
 	}
 
 	//-- save credential --

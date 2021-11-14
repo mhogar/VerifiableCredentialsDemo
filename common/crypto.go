@@ -1,4 +1,4 @@
-package helpers
+package common
 
 import (
 	"crypto"
@@ -11,7 +11,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
-	"vcd/common"
 )
 
 func SignCredential(keyURI string, res interface{}) ([]byte, error) {
@@ -37,7 +36,7 @@ func SignCredential(keyURI string, res interface{}) ([]byte, error) {
 	return sig, nil
 }
 
-func VerifyCredentialSignature(DID string, sig string, cred *common.VerifiableCredential) error {
+func VerifyCredentialSignature(DID string, sig string, cred *VerifiableCredential) error {
 	//decode signature
 	sigBytes, err := hex.DecodeString(sig)
 	if err != nil {

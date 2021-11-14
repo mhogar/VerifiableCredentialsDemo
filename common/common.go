@@ -1,5 +1,7 @@
 package common
 
+import "errors"
+
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
@@ -13,4 +15,8 @@ type VerifiableCredential struct {
 
 	IssuerDID string `json:"issuer,omitempty"`
 	IssuerSig string `json:"issuer_signature,omitempty"`
+}
+
+func ChainError(message string, err error) error {
+	return errors.New(message + "\n\t" + err.Error())
 }

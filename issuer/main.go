@@ -7,21 +7,20 @@ import (
 	"log"
 	"net/http"
 	"vcd/common"
-	"vcd/helpers"
 )
 
 func handler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
+		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
 		return
 	}
 	cred := common.VerifiableCredential{}
 
 	//parse request body
-	err := helpers.DecodeJSON(req.Body, &cred)
+	err := common.DecodeJSON(req.Body, &cred)
 	if err != nil {
 		log.Println(err)
-		helpers.SendErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
+		common.SendErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
@@ -30,10 +29,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	cred.SubjectSignature = ""
 
 	//verify subject signature
-	err = helpers.VerifyCredentialSignature(cred.SubjectDID, subjectSig, &cred)
+	err = common.VerifyCredentialSignature(cred.SubjectDID, subjectSig, &cred)
 	if err != nil {
 		log.Println(err)
-		helpers.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
+		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
@@ -41,16 +40,16 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	//add DID and create signature
 	cred.IssuerDID = "blockchain/issuer.json"
-	sig, err := helpers.SignCredential("keys/private.key", cred)
+	sig, err := common.SignCredential("keys/private.key", cred)
 	if err != nil {
 		log.Println(err)
-		helpers.SendInternalErrorResponse(w)
+		common.SendInternalErrorResponse(w)
 		return
 	}
 
 	//add signature and send response
 	cred.IssuerSig = hex.EncodeToString(sig)
-	helpers.SendJSONResponse(w, http.StatusOK, cred)
+	common.SendJSONResponse(w, http.StatusOK, cred)
 }
 
 func main() {
