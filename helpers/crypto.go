@@ -49,10 +49,16 @@ func loadPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
 	}
 
 	//parse private key
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
 		return nil, ChainError("error parsing private key from PEM bytes", err)
 	}
 
-	return key, nil
+	//verify key is RSA private key
+	rsaKey, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("key is not an RSA private key")
+	}
+
+	return rsaKey, nil
 }

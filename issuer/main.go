@@ -2,27 +2,23 @@ package main
 
 import (
 	"encoding/hex"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"vcd/common"
 	"vcd/helpers"
 )
 
-type RequestBody struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-}
-
-type CredentialResponse struct {
-	RequestBody
-	IssuerDID string `json:"issuer"`
-	IssuerSig string `json:"issuer_sig,omitempty"`
-}
-
 func handler(w http.ResponseWriter, req *http.Request) {
-	body := RequestBody{}
+	if req.Method != http.MethodPost {
+		helpers.SendBadRequestResponse(w, "invalid request method")
+		return
+	}
+	cred := common.VerifiableCredential{}
 
 	//parse request body
-	err := helpers.DecodeJSON(req.Body, &body)
+	err := helpers.DecodeJSON(req.Body, &cred)
 	if err != nil {
 		log.Println(err)
 		helpers.SendBadRequestResponse(w, "invalid JSON body")
@@ -31,26 +27,29 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	//TODO: verify request fields
 
-	//create response body
-	res := CredentialResponse{
-		RequestBody: body,
-		IssuerDID:   "Issuer DID",
-	}
-
-	//sign response
-	sig, err := helpers.SignResponse("keys/private.key", res)
+	//add DID and create signature
+	cred.IssuerDID = "Issuer DID"
+	sig, err := helpers.SignResponse("keys/private.key", cred)
 	if err != nil {
 		log.Println(err)
 		helpers.SendInternalErrorResponse(w)
 		return
 	}
 
-	//send response
-	res.IssuerSig = hex.EncodeToString(sig)
-	helpers.SendJSONResponse(w, http.StatusOK, res)
+	//add signature and send response
+	cred.IssuerSig = hex.EncodeToString(sig)
+	helpers.SendJSONResponse(w, http.StatusOK, cred)
 }
 
 func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8081", nil)
+	//parse flags
+	port := flag.Int("port", 8082, "port to run the server on")
+	flag.Parse()
+
+	//setup routes
+	http.HandleFunc("/creds", handler)
+
+	//run the server
+	fmt.Printf("listening on port %d...\n", *port)
+	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }

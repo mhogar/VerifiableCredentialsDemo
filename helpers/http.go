@@ -3,11 +3,8 @@ package helpers
 import (
 	"encoding/json"
 	"net/http"
+	"vcd/common"
 )
-
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
 
 func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
 	//set the header
@@ -22,7 +19,7 @@ func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
 }
 
 func SendErrorResponse(w http.ResponseWriter, status int, err string) {
-	SendJSONResponse(w, status, ErrorResponse{
+	SendJSONResponse(w, status, common.ErrorResponse{
 		Error: err,
 	})
 }
