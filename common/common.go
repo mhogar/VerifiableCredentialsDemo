@@ -2,10 +2,6 @@ package common
 
 import "errors"
 
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
 type VerifiableCredential struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`

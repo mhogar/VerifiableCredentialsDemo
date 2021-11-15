@@ -5,6 +5,14 @@ import (
 	"net/http"
 )
 
+type SuccessResponse struct {
+	Success bool `json:"success"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
 	//set the header
 	w.Header().Set("Content-Type", "application/json")
@@ -15,6 +23,12 @@ func SendJSONResponse(w http.ResponseWriter, status int, res interface{}) {
 		encoder := json.NewEncoder(w)
 		encoder.Encode(res)
 	}
+}
+
+func SendSuccessResponse(w http.ResponseWriter) {
+	SendJSONResponse(w, http.StatusOK, SuccessResponse{
+		Success: true,
+	})
 }
 
 func SendErrorResponse(w http.ResponseWriter, status int, err string) {

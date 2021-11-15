@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -24,42 +23,51 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//strip signature from credential
-	subjectSig := cred.SubjectSignature
+	//strip subject signature from credential
+	sig := cred.SubjectSignature
 	cred.SubjectSignature = ""
 
 	//verify subject signature
-	err = common.VerifyCredentialSignature([]byte(cred.SubjectDID), subjectSig, &cred)
+	err = common.VerifyCredentialSignature([]byte(cred.SubjectDID), sig, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
-	//TODO: verify request fields?
-
-	//add DID and create signature
-	cred.IssuerDID = "blockchain/issuer.json"
-	sig, err := common.SignCredential("keys/private.key", &cred)
+	//load issuer DID
+	issuerDID, err := common.LoadDIDFromBlockchain(cred.IssuerDID)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	//add signature and send response
-	cred.IssuerSig = hex.EncodeToString(sig)
-	common.SendJSONResponse(w, http.StatusOK, cred)
+	//strip issuer signature and DID from credential
+	sig = cred.IssuerSig
+	cred.IssuerSig = ""
+
+	//verify issuer signature
+	err = common.VerifyCredentialSignature(issuerDID, sig, &cred)
+	if err != nil {
+		log.Println(err)
+		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying issuer signature")
+		return
+	}
+
+	//TODO: do something with verified credential
+
+	common.SendSuccessResponse(w)
 }
 
 func main() {
 	//parse flags
-	port := flag.Int("port", 8082, "port to run the server on")
+	port := flag.Int("port", 8083, "port to run the server on")
 	flag.Parse()
 
 	//setup routes
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.HandleFunc("/creds", handler)
+	http.HandleFunc("/verify", handler)
 
 	//run the server
 	fmt.Printf("listening on port %d...\n", *port)
