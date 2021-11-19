@@ -36,10 +36,14 @@
     - send result to user
 
 ### Use Cases
-- design verifier for specific use case
+- top level university issuer
 - university exam
-    - pass around sheet with verifier QR code instead of sign in sheet
-        - improve privacy by not being able to see details of others in the exam
+    - scan QR code when you walk into exam and submit your VC
+        - replaces need for sign up sheet and manually checking of ids
+    - improve privacy by not being able to see details of others in the exam
+- verifier's DID signed by issuer so client can trust them
+    - allows submitting the same identity to multiple verifiers
+    - eg. restaurant that accepts student discounts
 
 ### Other Considerations
 - what blockchain to use to store DIDs for issuer and verifier

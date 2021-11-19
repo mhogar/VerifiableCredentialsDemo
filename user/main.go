@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"vcd/common"
@@ -69,7 +69,7 @@ func createVerifiableCredential() error {
 	return nil
 }
 
-func verifyCredential() error {
+func handleVerifyCredential() error {
 	//open file
 	f, err := os.Open("wallet/vc.json")
 	if err != nil {
@@ -99,10 +99,15 @@ func verifyCredential() error {
 }
 
 func main() {
-	//err := createVerifiableCredential()
-	err := verifyCredential()
+	//parse flags
+	port := flag.Int("port", 8080, "port to run the server on")
+	flag.Parse()
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	//setup routes
+	http.Handle("/", http.FileServer(http.Dir("./public")))
+	//http.HandleFunc("/verify", handleVerifyCredential)
+
+	//run the server
+	fmt.Printf("listening on port %d...\n", *port)
+	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
