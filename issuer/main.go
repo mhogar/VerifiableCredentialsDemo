@@ -9,6 +9,8 @@ import (
 	"vcd/common"
 )
 
+const DID = "issuer.json"
+
 func handler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
@@ -29,7 +31,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	cred.SubjectSignature = ""
 
 	//verify subject signature
-	err = common.VerifyCredentialSignature([]byte(cred.SubjectDID), subjectSig, &cred)
+	err = common.VerifyStructSignature([]byte(cred.SubjectDID), subjectSig, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
@@ -39,8 +41,8 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	//TODO: verify request fields?
 
 	//add DID and create signature
-	cred.IssuerDID = "blockchain/issuer.json"
-	sig, err := common.SignCredential("keys/private.key", &cred)
+	cred.IssuerDID = DID
+	sig, err := common.SignStruct("keys/private.key", &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)

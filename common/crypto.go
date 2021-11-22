@@ -13,15 +13,15 @@ import (
 	"io/ioutil"
 )
 
-func SignCredential(keyURI string, cred *VerifiableCredential) ([]byte, error) {
+func SignStruct(keyURI string, v interface{}) ([]byte, error) {
 	//load private key
 	key, err := loadPrivateKeyFromFile(keyURI)
 	if err != nil {
 		return nil, ChainError("error loading private key from file", err)
 	}
 
-	//marshal credential as json
-	bytes, err := json.Marshal(cred)
+	//marshal struct into json
+	bytes, err := json.Marshal(v)
 	if err != nil {
 		return nil, ChainError("error marshaling json", err)
 	}
@@ -36,7 +36,7 @@ func SignCredential(keyURI string, cred *VerifiableCredential) ([]byte, error) {
 	return sig, nil
 }
 
-func VerifyCredentialSignature(DID []byte, sig string, cred *VerifiableCredential) error {
+func VerifyStructSignature(DID []byte, sig string, v interface{}) error {
 	//decode signature
 	sigBytes, err := hex.DecodeString(sig)
 	if err != nil {
@@ -49,8 +49,11 @@ func VerifyCredentialSignature(DID []byte, sig string, cred *VerifiableCredentia
 		return ChainError("error loading public key from DID", err)
 	}
 
-	//marshal credential as json
-	bytes, _ := json.Marshal(cred)
+	//marshal struct into json
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return ChainError("error marshaling json", err)
+	}
 
 	//hash and verify
 	hash := sha256.Sum256(bytes)

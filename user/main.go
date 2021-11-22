@@ -12,19 +12,35 @@ import (
 	"vcd/common"
 )
 
-func sendRequest(cred *common.VerifiableCredential, url string) (io.ReadCloser, error) {
-	//sign credential
-	sig, err := common.SignCredential("wallet/private.key", cred)
-	if err != nil {
-		return nil, common.ChainError("error signing credential", err)
+type PresentationRequestResponse struct {
+	Name    string `json:"name"`
+	Domain  string `json:"domain"`
+	Purpose string `json:"purpose"`
+}
+
+const VERIFIER_URL = "http://localhost:8083/verify"
+
+var DIDLoader = common.DIDFileLoader{}
+
+func sendRequest(method string, url string, body *common.VerifiableCredential) (io.ReadCloser, error) {
+	var buffer io.Reader = nil
+
+	if body != nil {
+		//sign body
+		sig, err := common.SignStruct("wallet/private.key", body)
+		if err != nil {
+			return nil, common.ChainError("error signing credential", err)
+		}
+		body.SubjectSignature = hex.EncodeToString(sig)
+
+		buffer, _ = common.EncodeJSON(body)
 	}
-	cred.SubjectSignature = hex.EncodeToString(sig)
 
 	//send request
-	buffer, _ := common.EncodeJSON(&cred)
-	res, err := http.Post(url, "application/json", buffer)
+	req, _ := http.NewRequest(method, url, buffer)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, common.ChainError("error sending POST creds request", err)
+		return nil, common.ChainError("error sending request", err)
 	}
 
 	//handle error response
@@ -54,7 +70,7 @@ func createVerifiableCredential() error {
 	}
 
 	//send issue vc request
-	body, err := sendRequest(&cred, "http://localhost:8082/creds")
+	body, err := sendRequest("http://localhost:8082/creds", http.MethodPost, &cred)
 	if err != nil {
 		return err
 	}
@@ -70,7 +86,57 @@ func createVerifiableCredential() error {
 	return nil
 }
 
-func handleVerifyCredential(w http.ResponseWriter, _ *http.Request) {
+func getVerify() (*PresentationRequestResponse, error) {
+	body, err := sendRequest(http.MethodGet, VERIFIER_URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+
+	pres := common.PresentationRequest{}
+	err = common.DecodeJSON(body, &pres)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := DIDLoader.LoadDIDDocumentFromURI(pres.VerifierDID)
+	if err != nil {
+		return nil, err
+	}
+
+	DID, err := DIDLoader.LoadPublicKeyFromDocument(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	err = common.VerifyStructSignature(DID, pres.VerifierSignature, &pres)
+	if err != nil {
+		//TODO: fix verify issue
+		//return nil, common.ChainError("error verifying verifier signature", err)
+	}
+
+	//TODO: receive issuer DID to determine what type of creds to accept
+	//TODO: validate issuer signature on verifier DID document
+
+	return &PresentationRequestResponse{
+		Name:    pres.Name,
+		Purpose: pres.Purpose,
+		Domain:  doc.Domain,
+	}, nil
+}
+
+func getVerifyHandler(w http.ResponseWriter) {
+	pres, err := getVerify()
+	if err != nil {
+		log.Println(err)
+		common.SendInternalErrorResponse(w)
+		return
+	}
+
+	common.SendJSONResponse(w, http.StatusOK, pres)
+}
+
+func postVerifyHandler(w http.ResponseWriter) {
 	//open file
 	f, err := os.Open("wallet/vc.json")
 	if err != nil {
@@ -90,7 +156,7 @@ func handleVerifyCredential(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	//send verify request
-	_, err = sendRequest(&cred, "http://localhost:8083/verify")
+	_, err = sendRequest(http.MethodPost, VERIFIER_URL, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
@@ -100,14 +166,28 @@ func handleVerifyCredential(w http.ResponseWriter, _ *http.Request) {
 	common.SendSuccessResponse(w)
 }
 
+func verifyHandler(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		getVerifyHandler(w)
+	case http.MethodPost:
+		postVerifyHandler(w)
+	default:
+		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
+	}
+}
+
 func main() {
+	// createVerifiableCredential()
+	// return
+
 	//parse flags
 	port := flag.Int("port", 8080, "port to run the server on")
 	flag.Parse()
 
 	//setup routes
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.HandleFunc("/verify", handleVerifyCredential)
+	http.HandleFunc("/verify", verifyHandler)
 
 	//run the server
 	fmt.Printf("listening on port %d...\n", *port)

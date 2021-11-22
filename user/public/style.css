@@ -1,7 +1,12 @@
 body {
+    padding: 1rem;
     padding-top: 3rem;
 }
 
 #url-input {
     margin-bottom: 10px;
+}
+
+#verifyPromptCard {
+    padding: 1rem;
 }

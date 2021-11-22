@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -8,11 +9,29 @@ import (
 	"vcd/common"
 )
 
-func handler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
+const DID = "verifier.json"
+
+var DIDLoader = common.DIDFileLoader{}
+
+func getVerifyHandler(w http.ResponseWriter, _ *http.Request) {
+	pres := common.PresentationRequest{
+		Name:        "Sample Verifier",
+		Purpose:     "Logs first and last name.",
+		VerifierDID: DID,
+	}
+
+	sig, err := common.SignStruct("keys/private.key", &pres)
+	if err != nil {
+		log.Println(err)
+		common.SendInternalErrorResponse(w)
 		return
 	}
+
+	pres.VerifierSignature = hex.EncodeToString(sig)
+	common.SendJSONResponse(w, http.StatusOK, pres)
+}
+
+func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	cred := common.VerifiableCredential{}
 
 	//parse request body
@@ -28,7 +47,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	cred.SubjectSignature = ""
 
 	//verify subject signature
-	err = common.VerifyCredentialSignature([]byte(cred.SubjectDID), sig, &cred)
+	err = common.VerifyStructSignature([]byte(cred.SubjectDID), sig, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
@@ -36,7 +55,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//load issuer DID
-	issuerDID, err := common.LoadDIDFromBlockchain(cred.IssuerDID)
+	issuerDID, err := DIDLoader.LoadPublicKeyFromURI(cred.IssuerDID)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
@@ -48,7 +67,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	cred.IssuerSig = ""
 
 	//verify issuer signature
-	err = common.VerifyCredentialSignature(issuerDID, sig, &cred)
+	err = common.VerifyStructSignature(issuerDID, sig, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying issuer signature")
@@ -56,8 +75,20 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//TODO: do something with verified credential
+	log.Println("Verified:", cred.FirstName, cred.LastName)
 
 	common.SendSuccessResponse(w)
+}
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		getVerifyHandler(w, req)
+	case http.MethodPost:
+		postVerifyHandler(w, req)
+	default:
+		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
+	}
 }
 
 func main() {
