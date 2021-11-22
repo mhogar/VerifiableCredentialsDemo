@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"vcd/common"
@@ -69,11 +70,13 @@ func createVerifiableCredential() error {
 	return nil
 }
 
-func handleVerifyCredential() error {
+func handleVerifyCredential(w http.ResponseWriter, _ *http.Request) {
 	//open file
 	f, err := os.Open("wallet/vc.json")
 	if err != nil {
-		return common.ChainError("error opening vc file", err)
+		log.Println(common.ChainError("error opening vc file", err))
+		common.SendInternalErrorResponse(w)
+		return
 	}
 	defer f.Close()
 
@@ -81,21 +84,20 @@ func handleVerifyCredential() error {
 	cred := common.VerifiableCredential{}
 	err = common.DecodeJSON(f, &cred)
 	if err != nil {
-		return common.ChainError("error decoding JSON", err)
+		log.Println(common.ChainError("error decoding JSON", err))
+		common.SendInternalErrorResponse(w)
+		return
 	}
 
 	//send verify request
-	body, err := sendRequest(&cred, "http://localhost:8083/verify")
+	_, err = sendRequest(&cred, "http://localhost:8083/verify")
 	if err != nil {
-		return err
+		log.Println(err)
+		common.SendInternalErrorResponse(w)
+		return
 	}
-	defer body.Close()
 
-	res := common.SuccessResponse{}
-	common.DecodeJSON(body, &res)
-
-	fmt.Println(res)
-	return nil
+	common.SendSuccessResponse(w)
 }
 
 func main() {
@@ -105,7 +107,7 @@ func main() {
 
 	//setup routes
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	//http.HandleFunc("/verify", handleVerifyCredential)
+	http.HandleFunc("/verify", handleVerifyCredential)
 
 	//run the server
 	fmt.Printf("listening on port %d...\n", *port)
