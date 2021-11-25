@@ -19,6 +19,7 @@ type PresentationRequestResponse struct {
 }
 
 const VERIFIER_URL = "http://localhost:8083/verify"
+const ISSUER_URL = "http://localhost:8082/creds"
 
 var DIDLoader = common.DIDFileLoader{}
 
@@ -36,8 +37,13 @@ func sendRequest(method string, url string, body *common.VerifiableCredential) (
 		buffer, _ = common.EncodeJSON(body)
 	}
 
+	//create request
+	req, err := http.NewRequest(method, url, buffer)
+	if err != nil {
+		return nil, common.ChainError("error creating request", err)
+	}
+
 	//send request
-	req, _ := http.NewRequest(method, url, buffer)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, common.ChainError("error sending request", err)
@@ -65,12 +71,14 @@ func createVerifiableCredential() error {
 
 	cred := common.VerifiableCredential{
 		SubjectDID: string(DID),
-		FirstName:  "Bob",
-		LastName:   "ADobDob",
+		Credentials: map[string]string{
+			"FirstName": "Bob",
+			"LastName":  "ADobDob",
+		},
 	}
 
 	//send issue vc request
-	body, err := sendRequest("http://localhost:8082/creds", http.MethodPost, &cred)
+	body, err := sendRequest(http.MethodPost, ISSUER_URL, &cred)
 	if err != nil {
 		return err
 	}
@@ -178,8 +186,7 @@ func verifyHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	// createVerifiableCredential()
-	// return
+	//log.Fatal(createVerifiableCredential())
 
 	//parse flags
 	port := flag.Int("port", 8080, "port to run the server on")

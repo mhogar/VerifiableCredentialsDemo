@@ -75,7 +75,7 @@ func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//TODO: do something with verified credential
-	log.Println("Verified:", cred.FirstName, cred.LastName)
+	log.Println("Verified:", cred.Credentials["FirstName"], cred.Credentials["LastName"])
 
 	common.SendSuccessResponse(w)
 }

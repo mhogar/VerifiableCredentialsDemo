@@ -3,8 +3,7 @@ package common
 import "errors"
 
 type VerifiableCredential struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	Credentials map[string]string `json:"credentials"`
 
 	SubjectDID       string `json:"subject"`
 	SubjectSignature string `json:"subject_signature,omitempty"`
