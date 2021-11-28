@@ -12,6 +12,7 @@ const app = {
                     <div class="card-body">
                         <h5 class="card-title">{{verifyPrompt.name}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">{{verifyPrompt.domain}}</h6>
+                        <h6>Trusted By Issuer: {{verifyPrompt.trusted_by_issuer}}</h6>
                         <p class="card-text">{{verifyPrompt.purpose}}</p>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-success" @click="acceptVerifyPromptClick()">Accept</button>

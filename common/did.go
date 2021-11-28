@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -9,28 +10,23 @@ import (
 )
 
 type DIDDocument struct {
-	Name       string      `json:"name"`
-	Domain     string      `json:"domain"`
-	Route      string      `json:"route"`
-	Signatures []Signature `json:"signatures"`
+	Name       string            `json:"name"`
+	Domain     string            `json:"domain"`
+	Route      string            `json:"route"`
+	Signatures map[string]string `json:"signatures,omitempty"`
 }
 
-type DIDLoader interface {
-	LoadDIDDocument(uri string) (*DIDDocument, error)
-	LoadPublicKey(uri string) ([]byte, error)
+func getFullURI(uri string) string {
+	return path.Join("..", "blockchain", uri+".json")
 }
 
-type DIDFileLoader struct{}
-
-func (DIDFileLoader) LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
-	//open file
-	f, err := os.Open(path.Join("..", "blockchain", uri+".json"))
+func LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
+	f, err := os.Open(getFullURI(uri))
 	if err != nil {
 		return nil, ChainError("error opening DID document file", err)
 	}
 	defer f.Close()
 
-	//decode json
 	doc := DIDDocument{}
 	err = DecodeJSON(f, &doc)
 	if err != nil {
@@ -40,22 +36,19 @@ func (DIDFileLoader) LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
 	return &doc, nil
 }
 
-func (DIDFileLoader) LoadPublicKeyFromDocument(doc *DIDDocument) ([]byte, error) {
+func LoadPublicKeyFromDocument(doc *DIDDocument) ([]byte, error) {
 	url := "http://" + path.Join(doc.Domain, doc.Route)
 
-	//load issuer DID
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, ChainError("error sending DID Get request", err)
 	}
 	defer res.Body.Close()
 
-	//check request was successful
 	if res.StatusCode != http.StatusOK {
 		return nil, errors.New("error getting DID from url: " + url)
 	}
 
-	//read body
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, ChainError("error reading request body", err)
@@ -64,11 +57,26 @@ func (DIDFileLoader) LoadPublicKeyFromDocument(doc *DIDDocument) ([]byte, error)
 	return bytes, nil
 }
 
-func (l DIDFileLoader) LoadPublicKeyFromURI(uri string) ([]byte, error) {
-	doc, err := l.LoadDIDDocumentFromURI(uri)
+func LoadPublicKeyFromURI(uri string) ([]byte, error) {
+	doc, err := LoadDIDDocumentFromURI(uri)
 	if err != nil {
 		return nil, ChainError("error loading DID document", err)
 	}
 
-	return l.LoadPublicKeyFromDocument(doc)
+	return LoadPublicKeyFromDocument(doc)
+}
+
+func SaveDIDDocument(uri string, doc *DIDDocument) error {
+	f, err := os.Create(getFullURI(uri))
+	if err != nil {
+		return ChainError("error creating DID document file", err)
+	}
+	defer f.Close()
+
+	err = json.NewEncoder(f).Encode(doc)
+	if err != nil {
+		return ChainError("error encoding/writing DID document", err)
+	}
+
+	return nil
 }

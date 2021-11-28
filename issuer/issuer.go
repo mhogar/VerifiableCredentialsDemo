@@ -32,7 +32,7 @@ func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = common.VerifyStructSignature([]byte(iss.Subject.DID), &iss.Subject, &iss)
+	err = common.VerifyStructSignature([]byte(iss.Subject.DID), &iss.Subject.Signature, &iss)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")

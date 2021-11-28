@@ -34,9 +34,9 @@ func SignStruct(keyURI string, sig *Signature, v interface{}) error {
 	return nil
 }
 
-func VerifyStructSignature(DID []byte, sig *Signature, v interface{}) error {
-	sigStr := sig.Signature
-	sig.Signature = ""
+func VerifyStructSignature(DID []byte, sig *string, v interface{}) error {
+	sigStr := *sig
+	*sig = ""
 
 	sigBytes, err := base64.RawStdEncoding.DecodeString(sigStr)
 	if err != nil {
@@ -60,6 +60,23 @@ func VerifyStructSignature(DID []byte, sig *Signature, v interface{}) error {
 	}
 
 	return nil
+}
+
+func VerifyDIDDocumentSignature(doc *DIDDocument, verifyDID string) error {
+	sigs := doc.Signatures
+	doc.Signatures = nil
+
+	sig, ok := sigs[verifyDID]
+	if !ok {
+		return errors.New("no signature for DID")
+	}
+
+	bytes, err := LoadPublicKeyFromURI(verifyDID)
+	if err != nil {
+		return ChainError("error loading public key from uri", err)
+	}
+
+	return VerifyStructSignature(bytes, &sig, doc)
 }
 
 func LoadKeyFromFile(filename string) ([]byte, error) {

@@ -2,5 +2,7 @@
     "name": "University Issuer",
     "domain": "localhost:8082",
     "route": "verifier.cert",
-    "signatures": []
+    "signatures": {
+        "university-issuer": "GYcPa7lZZrxfINVgwGOGv8MhRkrbPpALqKhMqeOrIs8yjlVvLgYzPRTglfU3k16bzTAunzqEs4rbEhSEfs4l708po5RCB3k8SCusX7l+WBbiNu/gUsv6k3OaAiwaGUqWhKPHZdwwHchZikqgUTXN1bU8a+ZCpVJxU/ljKWjnk4o"
+    }
 }

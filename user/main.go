@@ -14,17 +14,16 @@ import (
 )
 
 type PresentationRequestResponse struct {
-	Name    string `json:"name"`
-	Domain  string `json:"domain"`
-	Purpose string `json:"purpose"`
+	Name            string `json:"name"`
+	Domain          string `json:"domain"`
+	Purpose         string `json:"purpose"`
+	TrustedByIssuer bool   `json:"trusted_by_issuer"`
 }
 
 const PRIVATE_KEY_URI = "wallet/private.key"
 
 const VERIFIER_URL = "http://localhost:8082/verify"
 const ISSUER_URL = "http://localhost:8082/issue"
-
-var DIDLoader = common.DIDFileLoader{}
 
 func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {
 	var buffer io.Reader = nil
@@ -108,29 +107,34 @@ func getVerify() (*PresentationRequestResponse, error) {
 		return nil, err
 	}
 
-	doc, err := DIDLoader.LoadDIDDocumentFromURI(pres.Verifier.DID)
+	doc, err := common.LoadDIDDocumentFromURI(pres.Verifier.DID)
 	if err != nil {
 		return nil, err
 	}
 
-	DID, err := DIDLoader.LoadPublicKeyFromDocument(doc)
+	DID, err := common.LoadPublicKeyFromDocument(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = common.VerifyStructSignature(DID, &pres.Verifier, &pres)
+	err = common.VerifyStructSignature(DID, &pres.Verifier.Signature, &pres)
 	if err != nil {
 		return nil, common.ChainError("error verifying verifier signature", err)
 	}
 
-	//TODO: receive issuer DID to determine what type of creds to accept
-	//TODO: validate issuer signature on verifier DID document
+	res := PresentationRequestResponse{
+		Name:            doc.Name,
+		Purpose:         pres.Purpose,
+		Domain:          doc.Domain,
+		TrustedByIssuer: false,
+	}
 
-	return &PresentationRequestResponse{
-		Name:    doc.Name,
-		Purpose: pres.Purpose,
-		Domain:  doc.Domain,
-	}, nil
+	err = common.VerifyDIDDocumentSignature(doc, pres.Issuer)
+	if err == nil {
+		res.TrustedByIssuer = true
+	}
+
+	return &res, nil
 }
 
 func getVerifyHandler(w http.ResponseWriter) {

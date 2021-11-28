@@ -12,8 +12,6 @@ type PresentationRequest struct {
 	Verifier common.Signature `json:"verifier"`
 }
 
-var DIDLoader = common.DIDFileLoader{}
-
 type Verifier interface {
 	CreatePresentationRequest() PresentationRequest
 	VerifyCredentials(cred *common.VerifiableCredential) error
@@ -47,21 +45,21 @@ func (s VerifierService) PostVerifyHandler(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	err = common.VerifyStructSignature([]byte(cred.Subject.DID), &cred.Subject, &cred)
+	err = common.VerifyStructSignature([]byte(cred.Subject.DID), &cred.Subject.Signature, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
-	issuerDID, err := DIDLoader.LoadPublicKeyFromURI(cred.Issuer.DID)
+	issuerDID, err := common.LoadPublicKeyFromURI(cred.Issuer.DID)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	err = common.VerifyStructSignature(issuerDID, &cred.Issuer, &cred)
+	err = common.VerifyStructSignature(issuerDID, &cred.Issuer.Signature, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying issuer signature")
