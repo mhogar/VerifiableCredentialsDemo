@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"vcd/common"
+	"vcd/issuer"
+	"vcd/verifier"
 )
 
 type PresentationRequestResponse struct {
@@ -18,22 +20,24 @@ type PresentationRequestResponse struct {
 	Purpose string `json:"purpose"`
 }
 
-const VERIFIER_URL = "http://localhost:8083/verify"
-const ISSUER_URL = "http://localhost:8082/creds"
+const VERIFIER_URL = "http://localhost:8082/verify"
+const ISSUER_URL = "http://localhost:8082/issue"
 
 var DIDLoader = common.DIDFileLoader{}
 
-func sendRequest(method string, url string, body *common.VerifiableCredential) (io.ReadCloser, error) {
+func signStruct(v interface{}) (string, error) {
+	sig, err := common.SignStruct("wallet/private.key", v)
+	if err != nil {
+		return "", common.ChainError("error signing struct", err)
+	}
+
+	return hex.EncodeToString(sig), nil
+}
+
+func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {
 	var buffer io.Reader = nil
 
 	if body != nil {
-		//sign body
-		sig, err := common.SignStruct("wallet/private.key", body)
-		if err != nil {
-			return nil, common.ChainError("error signing credential", err)
-		}
-		body.SubjectSignature = hex.EncodeToString(sig)
-
 		buffer, _ = common.EncodeJSON(body)
 	}
 
@@ -63,22 +67,26 @@ func sendRequest(method string, url string, body *common.VerifiableCredential) (
 }
 
 func createVerifiableCredential() error {
-	//load DID
 	DID, err := common.LoadKeyFromFile("DID.cert")
 	if err != nil {
 		return common.ChainError("error loading DID certificate", err)
 	}
 
-	cred := common.VerifiableCredential{
+	iss := issuer.IssueRequest{
 		SubjectDID: string(DID),
-		Credentials: map[string]string{
+		Fields: map[string]string{
 			"FirstName": "Bob",
 			"LastName":  "ADobDob",
 		},
 	}
 
-	//send issue vc request
-	body, err := sendRequest(http.MethodPost, ISSUER_URL, &cred)
+	sig, err := signStruct(&iss)
+	if err != nil {
+		return err
+	}
+	iss.SubjectSignature = sig
+
+	body, err := sendRequest(http.MethodPost, ISSUER_URL, &iss)
 	if err != nil {
 		return err
 	}
@@ -101,7 +109,7 @@ func getVerify() (*PresentationRequestResponse, error) {
 	}
 	defer body.Close()
 
-	pres := common.PresentationRequest{}
+	pres := verifier.PresentationRequest{}
 	err = common.DecodeJSON(body, &pres)
 	if err != nil {
 		return nil, err
@@ -163,7 +171,14 @@ func postVerifyHandler(w http.ResponseWriter) {
 		return
 	}
 
-	//send verify request
+	sig, err := signStruct(&cred)
+	if err != nil {
+		log.Println(err)
+		common.SendInternalErrorResponse(w)
+		return
+	}
+	cred.SubjectSignature = sig
+
 	_, err = sendRequest(http.MethodPost, VERIFIER_URL, &cred)
 	if err != nil {
 		log.Println(err)

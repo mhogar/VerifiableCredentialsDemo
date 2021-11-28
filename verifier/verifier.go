@@ -1,26 +1,36 @@
-package main
+package verifier
 
 import (
 	"encoding/hex"
-	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"vcd/common"
 )
 
-const DID = "verifier.json"
+type PresentationRequest struct {
+	Name    string `json:"string"`
+	Purpose string `json:"purpose"`
+
+	VerifierDID       string `json:"verifier"`
+	VerifierSignature string `json:"verifier_signature,omitempty"`
+}
 
 var DIDLoader = common.DIDFileLoader{}
 
-func getVerifyHandler(w http.ResponseWriter, _ *http.Request) {
-	pres := common.PresentationRequest{
-		Name:        "Sample Verifier",
-		Purpose:     "Logs first and last name.",
-		VerifierDID: DID,
-	}
+type Verifier interface {
+	CreatePresentationRequest() PresentationRequest
+	VerifyCredentials(cred *common.VerifiableCredential) error
+}
 
-	sig, err := common.SignStruct("keys/private.key", &pres)
+type VerifierService struct {
+	Verifier      Verifier
+	PrivateKeyURI string
+}
+
+func (s VerifierService) GetVerifyHandler(w http.ResponseWriter, _ *http.Request) {
+	pres := s.Verifier.CreatePresentationRequest()
+
+	sig, err := common.SignStruct(s.PrivateKeyURI, &pres)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
@@ -31,7 +41,7 @@ func getVerifyHandler(w http.ResponseWriter, _ *http.Request) {
 	common.SendJSONResponse(w, http.StatusOK, pres)
 }
 
-func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
+func (s VerifierService) PostVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	cred := common.VerifiableCredential{}
 
 	//parse request body
@@ -74,33 +84,11 @@ func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//TODO: do something with verified credential
-	log.Println("Verified:", cred.Credentials["FirstName"], cred.Credentials["LastName"])
+	err = s.Verifier.VerifyCredentials(&cred)
+	if err != nil {
+		common.SendErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	common.SendSuccessResponse(w)
-}
-
-func handler(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		getVerifyHandler(w, req)
-	case http.MethodPost:
-		postVerifyHandler(w, req)
-	default:
-		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
-	}
-}
-
-func main() {
-	//parse flags
-	port := flag.Int("port", 8083, "port to run the server on")
-	flag.Parse()
-
-	//setup routes
-	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.HandleFunc("/verify", handler)
-
-	//run the server
-	fmt.Printf("listening on port %d...\n", *port)
-	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
