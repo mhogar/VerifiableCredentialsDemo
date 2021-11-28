@@ -13,49 +13,46 @@ import (
 	"io/ioutil"
 )
 
-func SignStruct(keyURI string, v interface{}) ([]byte, error) {
-	//load private key
+func SignStruct(keyURI string, sig *Signature, v interface{}) error {
 	key, err := loadPrivateKeyFromFile(keyURI)
 	if err != nil {
-		return nil, ChainError("error loading private key from file", err)
+		return ChainError("error loading private key from file", err)
 	}
 
-	//marshal struct into json
-	bytes, err := json.Marshal(v)
-	if err != nil {
-		return nil, ChainError("error marshaling json", err)
-	}
-
-	//hash and sign
-	hash := sha256.Sum256(bytes)
-	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hash[:])
-	if err != nil {
-		return nil, ChainError("error signing hash", err)
-	}
-
-	return sig, nil
-}
-
-func VerifyStructSignature(DID []byte, sig string, v interface{}) error {
-	//decode signature
-	sigBytes, err := base64.RawStdEncoding.DecodeString(sig)
-	if err != nil {
-		return ChainError("error decoding signature", err)
-	}
-
-	//load public key
-	key, err := loadPublicKeyFromBytes(DID)
-	if err != nil {
-		return ChainError("error loading public key from DID", err)
-	}
-
-	//marshal struct into json
 	bytes, err := json.Marshal(v)
 	if err != nil {
 		return ChainError("error marshaling json", err)
 	}
 
-	//hash and verify
+	hash := sha256.Sum256(bytes)
+	sigBytes, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hash[:])
+	if err != nil {
+		return ChainError("error signing hash", err)
+	}
+
+	sig.Signature = base64.RawStdEncoding.EncodeToString(sigBytes)
+	return nil
+}
+
+func VerifyStructSignature(DID []byte, sig *Signature, v interface{}) error {
+	sigStr := sig.Signature
+	sig.Signature = ""
+
+	sigBytes, err := base64.RawStdEncoding.DecodeString(sigStr)
+	if err != nil {
+		return ChainError("error decoding signature", err)
+	}
+
+	key, err := loadPublicKeyFromBytes(DID)
+	if err != nil {
+		return ChainError("error loading public key from DID", err)
+	}
+
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return ChainError("error marshaling json", err)
+	}
+
 	hash := sha256.Sum256(bytes)
 	err = rsa.VerifyPKCS1v15(key, crypto.SHA256, hash[:], sigBytes)
 	if err != nil {

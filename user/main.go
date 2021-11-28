@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,19 +19,12 @@ type PresentationRequestResponse struct {
 	Purpose string `json:"purpose"`
 }
 
+const PRIVATE_KEY_URI = "wallet/private.key"
+
 const VERIFIER_URL = "http://localhost:8082/verify"
 const ISSUER_URL = "http://localhost:8082/issue"
 
 var DIDLoader = common.DIDFileLoader{}
-
-func signStruct(v interface{}) (string, error) {
-	sig, err := common.SignStruct("wallet/private.key", v)
-	if err != nil {
-		return "", common.ChainError("error signing struct", err)
-	}
-
-	return base64.RawStdEncoding.EncodeToString(sig), nil
-}
 
 func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {
 	var buffer io.Reader = nil
@@ -73,18 +65,19 @@ func createVerifiableCredential() error {
 	}
 
 	iss := issuer.IssueRequest{
-		SubjectDID: string(DID),
+		Subject: common.Signature{
+			DID: string(DID),
+		},
 		Fields: map[string]string{
 			"FirstName": "Bob",
 			"LastName":  "ADobDob",
 		},
 	}
 
-	sig, err := signStruct(&iss)
+	err = common.SignStruct(PRIVATE_KEY_URI, &iss.Subject, &iss)
 	if err != nil {
 		return err
 	}
-	iss.SubjectSignature = sig
 
 	body, err := sendRequest(http.MethodPost, ISSUER_URL, &iss)
 	if err != nil {
@@ -115,7 +108,7 @@ func getVerify() (*PresentationRequestResponse, error) {
 		return nil, err
 	}
 
-	doc, err := DIDLoader.LoadDIDDocumentFromURI(pres.VerifierDID)
+	doc, err := DIDLoader.LoadDIDDocumentFromURI(pres.Verifier.DID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,10 +118,9 @@ func getVerify() (*PresentationRequestResponse, error) {
 		return nil, err
 	}
 
-	err = common.VerifyStructSignature(DID, pres.VerifierSignature, &pres)
+	err = common.VerifyStructSignature(DID, &pres.Verifier, &pres)
 	if err != nil {
-		//TODO: fix verify issue
-		//return nil, common.ChainError("error verifying verifier signature", err)
+		return nil, common.ChainError("error verifying verifier signature", err)
 	}
 
 	//TODO: receive issuer DID to determine what type of creds to accept
@@ -171,13 +163,12 @@ func postVerifyHandler(w http.ResponseWriter) {
 		return
 	}
 
-	sig, err := signStruct(&cred)
+	err = common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
-	cred.SubjectSignature = sig
 
 	_, err = sendRequest(http.MethodPost, VERIFIER_URL, &cred)
 	if err != nil {
@@ -201,7 +192,7 @@ func verifyHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	//log.Fatal(createVerifiableCredential())
+	//.Fatal(createVerifiableCredential())
 
 	//parse flags
 	port := flag.Int("port", 8080, "port to run the server on")

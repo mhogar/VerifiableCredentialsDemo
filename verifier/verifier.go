@@ -1,7 +1,6 @@
 package verifier
 
 import (
-	"encoding/base64"
 	"log"
 	"net/http"
 	"vcd/common"
@@ -11,8 +10,7 @@ type PresentationRequest struct {
 	Name    string `json:"string"`
 	Purpose string `json:"purpose"`
 
-	VerifierDID       string `json:"verifier"`
-	VerifierSignature string `json:"verifier_signature,omitempty"`
+	Verifier common.Signature `json:"verifier"`
 }
 
 var DIDLoader = common.DIDFileLoader{}
@@ -30,21 +28,19 @@ type VerifierService struct {
 func (s VerifierService) GetVerifyHandler(w http.ResponseWriter, _ *http.Request) {
 	pres := s.Verifier.CreatePresentationRequest()
 
-	sig, err := common.SignStruct(s.PrivateKeyURI, &pres)
+	err := common.SignStruct(s.PrivateKeyURI, &pres.Verifier, &pres)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	pres.VerifierSignature = base64.RawStdEncoding.EncodeToString(sig)
 	common.SendJSONResponse(w, http.StatusOK, pres)
 }
 
 func (s VerifierService) PostVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	cred := common.VerifiableCredential{}
 
-	//parse request body
 	err := common.DecodeJSON(req.Body, &cred)
 	if err != nil {
 		log.Println(err)
@@ -52,32 +48,21 @@ func (s VerifierService) PostVerifyHandler(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	//strip subject signature from credential
-	sig := cred.SubjectSignature
-	cred.SubjectSignature = ""
-
-	//verify subject signature
-	err = common.VerifyStructSignature([]byte(cred.SubjectDID), sig, &cred)
+	err = common.VerifyStructSignature([]byte(cred.Subject.DID), &cred.Subject, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
-	//load issuer DID
-	issuerDID, err := DIDLoader.LoadPublicKeyFromURI(cred.IssuerDID)
+	issuerDID, err := DIDLoader.LoadPublicKeyFromURI(cred.Issuer.DID)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	//strip issuer signature and DID from credential
-	sig = cred.IssuerSig
-	cred.IssuerSig = ""
-
-	//verify issuer signature
-	err = common.VerifyStructSignature(issuerDID, sig, &cred)
+	err = common.VerifyStructSignature(issuerDID, &cred.Issuer, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying issuer signature")

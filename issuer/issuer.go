@@ -1,7 +1,6 @@
 package issuer
 
 import (
-	"encoding/base64"
 	"log"
 	"net/http"
 	"vcd/common"
@@ -10,8 +9,7 @@ import (
 type IssueRequest struct {
 	Fields map[string]string `json:"fields"`
 
-	SubjectDID       string `json:"subject"`
-	SubjectSignature string `json:"subject_signature,omitempty"`
+	Subject common.Signature `json:"subject"`
 }
 
 type Issuer interface {
@@ -27,7 +25,6 @@ type IssuerService struct {
 func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request) {
 	iss := IssueRequest{}
 
-	//parse request body
 	err := common.DecodeJSON(req.Body, &iss)
 	if err != nil {
 		log.Println(err)
@@ -35,35 +32,29 @@ func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	//strip signature
-	subjectSig := iss.SubjectSignature
-	iss.SubjectSignature = ""
-
-	//verify subject signature
-	err = common.VerifyStructSignature([]byte(iss.SubjectDID), subjectSig, &iss)
+	err = common.VerifyStructSignature([]byte(iss.Subject.DID), &iss.Subject, &iss)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
-	//create credentials
 	cred, err := s.Issuer.CreateVerifiableCredentials(&iss)
 	if err != nil {
 		common.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	//add DID and create signature
-	cred.IssuerDID = s.DID
-	sig, err := common.SignStruct(s.PrivateKeyURI, &cred)
+	cred.Issuer = common.Signature{
+		DID: s.DID,
+	}
+
+	err = common.SignStruct(s.PrivateKeyURI, &cred.Issuer, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	//add signature and send response
-	cred.IssuerSig = base64.RawStdEncoding.EncodeToString(sig)
 	common.SendJSONResponse(w, http.StatusOK, cred)
 }

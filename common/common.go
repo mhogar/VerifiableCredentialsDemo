@@ -2,14 +2,16 @@ package common
 
 import "errors"
 
+type Signature struct {
+	DID       string `json:"did"`
+	Signature string `json:"signature,omitempty"`
+}
+
 type VerifiableCredential struct {
 	Credentials map[string]string `json:"credentials"`
 
-	SubjectDID       string `json:"subject"`
-	SubjectSignature string `json:"subject_signature,omitempty"`
-
-	IssuerDID string `json:"issuer,omitempty"`
-	IssuerSig string `json:"issuer_signature,omitempty"`
+	Subject Signature `json:"subject"`
+	Issuer  Signature `json:"issuer"`
 }
 
 func ChainError(message string, err error) error {

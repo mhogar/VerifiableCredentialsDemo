@@ -13,9 +13,11 @@ type Verifier struct{}
 
 func (Verifier) CreatePresentationRequest() verifier.PresentationRequest {
 	return verifier.PresentationRequest{
-		Name:        "Sample Verifier",
-		Purpose:     "Logs first and last name.",
-		VerifierDID: "university-verifier.json",
+		Name:    "Sample Verifier",
+		Purpose: "Logs first and last name.",
+		Verifier: common.Signature{
+			DID: "university-verifier.json",
+		},
 	}
 }
 
@@ -28,8 +30,8 @@ type Issuer struct{}
 
 func (Issuer) CreateVerifiableCredentials(iss *issuer.IssueRequest) (*common.VerifiableCredential, error) {
 	return &common.VerifiableCredential{
-		SubjectDID:  iss.SubjectDID,
 		Credentials: iss.Fields,
+		Subject:     iss.Subject,
 	}, nil
 }
 
