@@ -1,7 +1,7 @@
 package verifier
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"log"
 	"net/http"
 	"vcd/common"
@@ -37,7 +37,7 @@ func (s VerifierService) GetVerifyHandler(w http.ResponseWriter, _ *http.Request
 		return
 	}
 
-	pres.VerifierSignature = hex.EncodeToString(sig)
+	pres.VerifierSignature = base64.RawStdEncoding.EncodeToString(sig)
 	common.SendJSONResponse(w, http.StatusOK, pres)
 }
 

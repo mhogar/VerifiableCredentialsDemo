@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -31,7 +31,7 @@ func signStruct(v interface{}) (string, error) {
 		return "", common.ChainError("error signing struct", err)
 	}
 
-	return hex.EncodeToString(sig), nil
+	return base64.RawStdEncoding.EncodeToString(sig), nil
 }
 
 func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {

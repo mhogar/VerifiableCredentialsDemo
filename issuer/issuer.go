@@ -1,7 +1,7 @@
 package issuer
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"log"
 	"net/http"
 	"vcd/common"
@@ -64,6 +64,6 @@ func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	//add signature and send response
-	cred.IssuerSig = hex.EncodeToString(sig)
+	cred.IssuerSig = base64.RawStdEncoding.EncodeToString(sig)
 	common.SendJSONResponse(w, http.StatusOK, cred)
 }

@@ -6,7 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -38,7 +38,7 @@ func SignStruct(keyURI string, v interface{}) ([]byte, error) {
 
 func VerifyStructSignature(DID []byte, sig string, v interface{}) error {
 	//decode signature
-	sigBytes, err := hex.DecodeString(sig)
+	sigBytes, err := base64.RawStdEncoding.DecodeString(sig)
 	if err != nil {
 		return ChainError("error decoding signature", err)
 	}
