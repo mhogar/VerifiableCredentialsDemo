@@ -8,14 +8,14 @@ const app = {
         <div class="ui basic segment">
             <div v-if="isLoading" class="ui active loader"></div>
             <div v-else class="ui centered container grid">
-                <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">  
+                <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
                     <p>
                         {{alert.text}} 
                         <i class="close icon" @click="clearAlert()"></i>
                     </p>
                 </div>
                 <div id="page-content">
-                    <div v-if="verifyPrompt" id="verifyPromptCard" class="ui raised card">
+                    <div v-if="verifyPrompt" class="ui raised card">
                         <div class="content">
                             <div class="header">{{verifyPrompt.name}}</div>
                             <div class="meta">
@@ -55,7 +55,7 @@ const app = {
             isLoading: false,
             alert: null,
             verifyPrompt: null,
-            url: ""
+            url: "http://localhost:8082/verify"
         }
     },
     computed: {
@@ -70,6 +70,9 @@ const app = {
                 text: text
             }
         },
+        setInternalErrorAlert() {
+            this.setAlert("negative", "An internal error occurred. Try again later.")
+        },
         clearAlert() {
             this.alert = null
         },
@@ -77,33 +80,51 @@ const app = {
             this.clearAlert()
             this.isLoading = true
 
-            axios.get('/verify')
-                .then((res) => {
-                    this.verifyPrompt = res.data
-                })
-                .catch(() => {
-                    this.setAlert("negative", "An error occurred. Try again later.")
-                })
-                .then(() => {
-                    this.isLoading = false
-                })
+            axios.get('/verify', {
+                params: {
+                    url: this.url
+                }
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.setAlert("negative", res.data.error)
+                    return
+                }
+
+                this.verifyPrompt = res.data
+            })
+            .catch((err) => {
+                console.log(err)
+                this.setInternalErrorAlert()
+            })
+            .then(() => {
+                this.isLoading = false
+            })
         },
         denyVerifyPromptClick() {
             this.setAlert("warning", "Verify request denied.")
             this.verifyPrompt = false
+            this.url = ""
         },
         acceptVerifyPromptClick() {
             this.isLoading = true
             axios.post('/verify', {})
-                .then(() => {
+                .then((res) => {
+                    if (res.data.error) {
+                        this.setAlert("negative", res.data.error)
+                        return
+                    }
+
                     this.setAlert("positive", "Verified!")
                 })
-                .catch(() => {
-                    this.setAlert("negative", "An error occurred. Try again later.")
+                .catch((err) => {
+                    console.log(err)
+                    this.setInternalErrorAlert()
                 })
                 .then(() => {
                     this.isLoading = false
                     this.verifyPrompt = false
+                    this.url = ""
                 })
         }
     }
