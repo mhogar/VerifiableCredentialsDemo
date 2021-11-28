@@ -32,7 +32,7 @@ func VerifyHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func getVerifyHandler(w http.ResponseWriter, req *http.Request) {
-	pres, cerr := getVerify(req)
+	pres, cerr := getVerify(req.URL.Query().Get("url"))
 	if cerr.Type == TypeClientError {
 		common.SendErrorResponse(w, http.StatusOK, cerr.Message)
 		return
@@ -45,9 +45,7 @@ func getVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	common.SendJSONResponse(w, http.StatusOK, pres)
 }
 
-func getVerify(req *http.Request) (*PresentationRequestResponse, CustomError) {
-	url := req.URL.Query().Get("url")
-
+func getVerify(url string) (*PresentationRequestResponse, CustomError) {
 	body, err := sendRequest(http.MethodGet, url, nil)
 	if err != nil {
 		common.LogChainError("error sending get verify request", err)
@@ -96,35 +94,45 @@ func getVerify(req *http.Request) (*PresentationRequestResponse, CustomError) {
 }
 
 func postVerifyHandler(w http.ResponseWriter) {
-	f, err := os.Open("wallet/vc.json")
-	if err != nil {
-		log.Println(common.ChainError("error opening vc file", err))
+	cerr := postVerify()
+	if cerr.Type == TypeClientError {
+		common.SendErrorResponse(w, http.StatusOK, cerr.Message)
+		return
+	}
+	if cerr.Type == TypeInternalError {
 		common.SendInternalErrorResponse(w)
 		return
+	}
+
+	common.SendSuccessResponse(w)
+}
+
+func postVerify() CustomError {
+	f, err := os.Open("wallet/vc.json")
+	if err != nil {
+		common.LogChainError("error opening vc file", err)
+		return InternalError()
 	}
 	defer f.Close()
 
 	cred := common.VerifiableCredential{}
 	err = common.DecodeJSON(f, &cred)
 	if err != nil {
-		log.Println(common.ChainError("error decoding JSON", err))
-		common.SendInternalErrorResponse(w)
-		return
+		common.LogChainError("error decoding credential JSON", err)
+		return InternalError()
 	}
 
 	err = common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, &cred)
 	if err != nil {
-		log.Println(err)
-		common.SendInternalErrorResponse(w)
-		return
+		common.LogChainError("error signing credential", err)
+		return InternalError()
 	}
 
 	_, err = sendRequest(http.MethodPost, VERIFIER_URL, &cred)
 	if err != nil {
 		log.Println(err)
-		common.SendInternalErrorResponse(w)
-		return
+		return InternalError()
 	}
 
-	common.SendSuccessResponse(w)
+	return NoError()
 }
