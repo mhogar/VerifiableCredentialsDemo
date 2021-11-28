@@ -1,33 +1,52 @@
 const app = {
     template: `
-        <div class="container">
-            <div v-if="isLoading" class="d-flex justify-content-center">
-                <div class="spinner-border" role="status"></div>
-            </div>
-            <div v-else>
-                <div v-if="alert" :class="'text-center alert alert-' + alert.type" role="alert">
-                    {{alert.text}}
+        <div id="navbar" class="ui fixed borderless huge inverted menu">
+            <div class="header item"><b>VCD</b></div>
+            <a class="item">Issue</a>
+            <a class="item">Verify</a>
+        </div>
+        <div class="ui basic segment">
+            <div v-if="isLoading" class="ui active loader"></div>
+            <div v-else class="ui centered container grid">
+                <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">  
+                    <p>
+                        {{alert.text}} 
+                        <i class="close icon" @click="clearAlert()"></i>
+                    </p>
                 </div>
-                <div v-if="verifyPrompt" id="verifyPromptCard" class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">{{verifyPrompt.name}}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">{{verifyPrompt.domain}}</h6>
-                        <h6>Trusted By Issuer: {{verifyPrompt.trusted_by_issuer}}</h6>
-                        <p class="card-text">{{verifyPrompt.purpose}}</p>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-success" @click="acceptVerifyPromptClick()">Accept</button>
-                            <button type="button" class="btn btn-danger" @click="denyVerifyPromptClick">Deny</button>
+                <div id="page-content">
+                    <div v-if="verifyPrompt" id="verifyPromptCard" class="ui raised card">
+                        <div class="content">
+                            <div class="header">{{verifyPrompt.name}}</div>
+                            <div class="meta">
+                                <span>{{verifyPrompt.domain}}</span>
+                            </div>
+                            <h4 class="ui sub header">
+                                Trusted By Issuer:
+                                <i :class="trustedByVerifierIcon"></i>
+                            </h4>
+                        </div>
+                        <div class="content">
+                            <div class="description">
+                                <p>{{verifyPrompt.purpose}}</p>
+                            </div>
+                        </div>
+                        <div class="extra content">
+                            <div class="ui buttons">
+                                <button type="button" class="ui positive button" @click="acceptVerifyPromptClick()">Accept</button>
+                                <div class="or"></div>
+                                <button type="button" class="ui negative button" @click="denyVerifyPromptClick">Deny</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <h2 class="ui header">Send a Verify Request</h2>
+                        <div class="ui action input">
+                            <input type="text" v-model="url">
+                            <button class="ui button" @click.prevent="submitPresReq">Submit</button>
                         </div>
                     </div>
                 </div>
-                <form v-else>
-                    <!--div class="row">
-                        <input id="url-input" class="form-control" v-model="url">   
-                    </div-->
-                    <div class="row">
-                        <button type="submit" class="btn btn-primary" @click.prevent="submitPresReq">Submit</button>
-                    </div>
-                </form>
             </div>
         </div>
     `,
@@ -37,6 +56,11 @@ const app = {
             alert: null,
             verifyPrompt: null,
             url: ""
+        }
+    },
+    computed: {
+        trustedByVerifierIcon() {
+            return this.verifyPrompt.trusted_by_issuer ? 'check circle green icon' : 'close red icon'
         }
     },
     methods: {
@@ -58,7 +82,7 @@ const app = {
                     this.verifyPrompt = res.data
                 })
                 .catch(() => {
-                    this.setAlert("danger", "An error occurred. Try again later.")
+                    this.setAlert("negative", "An error occurred. Try again later.")
                 })
                 .then(() => {
                     this.isLoading = false
@@ -72,10 +96,10 @@ const app = {
             this.isLoading = true
             axios.post('/verify', {})
                 .then(() => {
-                    this.setAlert("success", "Verified!")
+                    this.setAlert("positive", "Verified!")
                 })
                 .catch(() => {
-                    this.setAlert("danger", "An error occurred. Try again later.")
+                    this.setAlert("negative", "An error occurred. Try again later.")
                 })
                 .then(() => {
                     this.isLoading = false
