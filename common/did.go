@@ -9,8 +9,10 @@ import (
 )
 
 type DIDDocument struct {
-	Domain string `json:"domain"`
-	Route  string `json:"route"`
+	Name       string      `json:"name"`
+	Domain     string      `json:"domain"`
+	Route      string      `json:"route"`
+	Signatures []Signature `json:"signatures"`
 }
 
 type DIDLoader interface {
@@ -22,7 +24,7 @@ type DIDFileLoader struct{}
 
 func (DIDFileLoader) LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
 	//open file
-	f, err := os.Open(path.Join("..", "blockchain", uri))
+	f, err := os.Open(path.Join("..", "blockchain", uri+".json"))
 	if err != nil {
 		return nil, ChainError("error opening DID document file", err)
 	}

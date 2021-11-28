@@ -1,4 +1,6 @@
 {
+    "name": "University Issuer",
     "domain": "localhost:8082",
-    "route": "verifier.cert"
+    "route": "verifier.cert",
+    "signatures": []
 }

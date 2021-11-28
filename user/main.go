@@ -127,7 +127,7 @@ func getVerify() (*PresentationRequestResponse, error) {
 	//TODO: validate issuer signature on verifier DID document
 
 	return &PresentationRequestResponse{
-		Name:    pres.Name,
+		Name:    doc.Name,
 		Purpose: pres.Purpose,
 		Domain:  doc.Domain,
 	}, nil
@@ -145,7 +145,6 @@ func getVerifyHandler(w http.ResponseWriter) {
 }
 
 func postVerifyHandler(w http.ResponseWriter) {
-	//open file
 	f, err := os.Open("wallet/vc.json")
 	if err != nil {
 		log.Println(common.ChainError("error opening vc file", err))
@@ -154,7 +153,6 @@ func postVerifyHandler(w http.ResponseWriter) {
 	}
 	defer f.Close()
 
-	//decode json
 	cred := common.VerifiableCredential{}
 	err = common.DecodeJSON(f, &cred)
 	if err != nil {
@@ -192,7 +190,7 @@ func verifyHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	//.Fatal(createVerifiableCredential())
+	//log.Fatal(createVerifiableCredential())
 
 	//parse flags
 	port := flag.Int("port", 8080, "port to run the server on")

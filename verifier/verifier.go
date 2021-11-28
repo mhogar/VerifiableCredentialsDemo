@@ -7,9 +7,8 @@ import (
 )
 
 type PresentationRequest struct {
-	Name    string `json:"string"`
-	Purpose string `json:"purpose"`
-
+	Purpose  string           `json:"purpose"`
+	Issuer   string           `json:"issuer"`
 	Verifier common.Signature `json:"verifier"`
 }
 

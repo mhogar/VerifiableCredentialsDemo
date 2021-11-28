@@ -13,10 +13,10 @@ type Verifier struct{}
 
 func (Verifier) CreatePresentationRequest() verifier.PresentationRequest {
 	return verifier.PresentationRequest{
-		Name:    "Sample Verifier",
 		Purpose: "Logs first and last name.",
+		Issuer:  "university-issuer",
 		Verifier: common.Signature{
-			DID: "university-verifier.json",
+			DID: "university-verifier",
 		},
 	}
 }
@@ -47,7 +47,7 @@ func main() {
 		},
 		IssuerService: issuer.IssuerService{
 			Issuer:        Issuer{},
-			DID:           "university-issuer.json",
+			DID:           "university-issuer",
 			PrivateKeyURI: "university/keys/issuer.private.key",
 		},
 	}
