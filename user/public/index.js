@@ -83,7 +83,8 @@ const app = {
             axios.get('/verify', {
                 params: {
                     url: this.url
-                }
+                },
+                validateStatus: (status) => status < 500
             })
             .then((res) => {
                 if (res.data.error) {
@@ -108,24 +109,26 @@ const app = {
         },
         acceptVerifyPromptClick() {
             this.isLoading = true
-            axios.post('/verify', {})
-                .then((res) => {
-                    if (res.data.error) {
-                        this.setAlert("negative", res.data.error)
-                        return
-                    }
+            axios.post('/verify', {
+                url: this.url
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.setAlert("negative", res.data.error)
+                    return
+                }
 
-                    this.setAlert("positive", "Verified!")
-                })
-                .catch((err) => {
-                    console.log(err)
-                    this.setInternalErrorAlert()
-                })
-                .then(() => {
-                    this.isLoading = false
-                    this.verifyPrompt = false
-                    this.url = ""
-                })
+                this.setAlert("positive", "Verified!")
+            })
+            .catch((err) => {
+                console.log(err)
+                this.setInternalErrorAlert()
+            })
+            .then(() => {
+                this.isLoading = false
+                this.verifyPrompt = false
+                this.url = ""
+            })
         }
     }
 };

@@ -10,9 +10,6 @@ import (
 
 const PRIVATE_KEY_URI = "wallet/private.key"
 
-const VERIFIER_URL = "http://localhost:8082/verify"
-const ISSUER_URL = "http://localhost:8082/issue"
-
 type PresentationRequestResponse struct {
 	Name            string `json:"name"`
 	Domain          string `json:"domain"`
@@ -25,7 +22,7 @@ func VerifyHandler(w http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 		getVerifyHandler(w, req)
 	case http.MethodPost:
-		postVerifyHandler(w)
+		postVerifyHandler(w, req)
 	default:
 		common.SendErrorResponse(w, http.StatusBadRequest, "invalid request method")
 	}
@@ -34,7 +31,7 @@ func VerifyHandler(w http.ResponseWriter, req *http.Request) {
 func getVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	pres, cerr := getVerify(req.URL.Query().Get("url"))
 	if cerr.Type == TypeClientError {
-		common.SendErrorResponse(w, http.StatusOK, cerr.Message)
+		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
 		return
 	}
 	if cerr.Type == TypeInternalError {
@@ -93,10 +90,25 @@ func getVerify(url string) (*PresentationRequestResponse, CustomError) {
 	return &res, NoError()
 }
 
-func postVerifyHandler(w http.ResponseWriter) {
-	cerr := postVerify()
+func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
+	body := map[string]string{}
+
+	err := common.DecodeJSON(req.Body, &body)
+	if err != nil {
+		common.LogChainError("error decoding post verify body", err)
+		common.SendErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	url, ok := body["url"]
+	if !ok {
+		common.SendErrorResponse(w, http.StatusBadRequest, "missing required \"url\" parameter")
+		return
+	}
+
+	cerr := postVerify(url)
 	if cerr.Type == TypeClientError {
-		common.SendErrorResponse(w, http.StatusOK, cerr.Message)
+		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
 		return
 	}
 	if cerr.Type == TypeInternalError {
@@ -107,7 +119,7 @@ func postVerifyHandler(w http.ResponseWriter) {
 	common.SendSuccessResponse(w)
 }
 
-func postVerify() CustomError {
+func postVerify(url string) CustomError {
 	f, err := os.Open("wallet/vc.json")
 	if err != nil {
 		common.LogChainError("error opening vc file", err)
@@ -128,7 +140,7 @@ func postVerify() CustomError {
 		return InternalError()
 	}
 
-	_, err = sendRequest(http.MethodPost, VERIFIER_URL, &cred)
+	_, err = sendRequest(http.MethodPost, url, &cred)
 	if err != nil {
 		log.Println(err)
 		return InternalError()
