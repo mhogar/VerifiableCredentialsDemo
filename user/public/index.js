@@ -1,3 +1,112 @@
+const VerifyPage = {
+    template: `
+        <div>
+            <div v-if="verifyPrompt" class="ui raised card">
+                <div class="content">
+                    <div class="header">{{verifyPrompt.name}}</div>
+                    <div class="meta">
+                        <span>{{verifyPrompt.domain}}</span>
+                    </div>
+                    <h4 class="ui sub header">
+                        Trusted By Issuer:
+                        <i :class="trustedByVerifierIcon"></i>
+                    </h4>
+                </div>
+                <div class="content">
+                    <div class="description">
+                        <p>{{verifyPrompt.purpose}}</p>
+                    </div>
+                </div>
+                <div class="extra content">
+                    <div class="ui buttons">
+                        <button type="button" class="ui positive button" @click="acceptVerifyPromptClick()">Accept</button>
+                        <div class="or"></div>
+                        <button type="button" class="ui negative button" @click="denyVerifyPromptClick">Deny</button>
+                    </div>
+                </div>
+            </div>
+            <div v-else>
+                <h2 class="ui header">Send a Verify Request</h2>
+                <div class="ui action input">
+                    <input type="text" v-model="url">
+                    <button class="ui button" @click.prevent="submitPresReq">Submit</button>
+                </div>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            verifyPrompt: null,
+            url: "http://localhost:8082/verify"
+        }
+    },
+    computed: {
+        trustedByVerifierIcon() {
+            return this.verifyPrompt.trusted_by_issuer ? 'check circle green icon' : 'close red icon'
+        }
+    },
+    mounted() {
+        console.log('mounted ', this.verifyPrompt)
+    },
+    methods: {
+        submitPresReq() {
+            this.$emit('clearAlert')
+            this.$emit('loading', true)
+
+            axios.get('/verify', {
+                params: {
+                    url: this.url
+                },
+                validateStatus: (status) => status < 500
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.$emit('setAlert', "negative", res.data.error)
+                    return
+                }
+
+                this.verifyPrompt = res.data
+            })
+            .catch((err) => {
+                console.log(err)
+                this.$emit('setAlert', "negative", "An internal error occurred. Try again later.")
+            })
+            .then(() => {
+                this.$emit('loading', false)
+            })
+        },
+        denyVerifyPromptClick() {
+            this.$parent.setAlert("warning", "Verify request denied.")
+            this.verifyPrompt = false
+            this.url = ""
+        },
+        acceptVerifyPromptClick() {
+            this.$emit('loading', true)
+            axios.post('/verify', {
+                url: this.url
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.$emit('setAlert', "negative", res.data.error)
+                    return
+                }
+
+                this.$emit('setAlert', "positive", "Verified!")
+            })
+            .catch((err) => {
+                console.log(err)
+                this.$emit('setAlert', "negative", "An internal error occurred. Try again later.")
+            })
+            .then(() => {
+                this.$parent.isLoading = false
+                this.verifyPrompt = false
+                this.url = ""
+            })
+        }
+    }
+}
+
+
 const app = {
     template: `
         <div id="navbar" class="ui fixed borderless huge inverted menu">
@@ -15,37 +124,7 @@ const app = {
                     </p>
                 </div>
                 <div id="page-content">
-                    <div v-if="verifyPrompt" class="ui raised card">
-                        <div class="content">
-                            <div class="header">{{verifyPrompt.name}}</div>
-                            <div class="meta">
-                                <span>{{verifyPrompt.domain}}</span>
-                            </div>
-                            <h4 class="ui sub header">
-                                Trusted By Issuer:
-                                <i :class="trustedByVerifierIcon"></i>
-                            </h4>
-                        </div>
-                        <div class="content">
-                            <div class="description">
-                                <p>{{verifyPrompt.purpose}}</p>
-                            </div>
-                        </div>
-                        <div class="extra content">
-                            <div class="ui buttons">
-                                <button type="button" class="ui positive button" @click="acceptVerifyPromptClick()">Accept</button>
-                                <div class="or"></div>
-                                <button type="button" class="ui negative button" @click="denyVerifyPromptClick">Deny</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else>
-                        <h2 class="ui header">Send a Verify Request</h2>
-                        <div class="ui action input">
-                            <input type="text" v-model="url">
-                            <button class="ui button" @click.prevent="submitPresReq">Submit</button>
-                        </div>
-                    </div>
+                    <VerifyPage @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
                 </div>
             </div>
         </div>
@@ -54,83 +133,25 @@ const app = {
         return {
             isLoading: false,
             alert: null,
-            verifyPrompt: null,
-            url: "http://localhost:8082/verify"
         }
     },
-    computed: {
-        trustedByVerifierIcon() {
-            return this.verifyPrompt.trusted_by_issuer ? 'check circle green icon' : 'close red icon'
-        }
+    components: {
+        VerifyPage
     },
     methods: {
+        changeLoading(loading) {
+            this.loading = loading
+        },
         setAlert(type, text) {
             this.alert = {
                 type: type,
                 text: text
             }
         },
-        setInternalErrorAlert() {
-            this.setAlert("negative", "An internal error occurred. Try again later.")
-        },
         clearAlert() {
             this.alert = null
-        },
-        submitPresReq() {
-            this.clearAlert()
-            this.isLoading = true
-
-            axios.get('/verify', {
-                params: {
-                    url: this.url
-                },
-                validateStatus: (status) => status < 500
-            })
-            .then((res) => {
-                if (res.data.error) {
-                    this.setAlert("negative", res.data.error)
-                    return
-                }
-
-                this.verifyPrompt = res.data
-            })
-            .catch((err) => {
-                console.log(err)
-                this.setInternalErrorAlert()
-            })
-            .then(() => {
-                this.isLoading = false
-            })
-        },
-        denyVerifyPromptClick() {
-            this.setAlert("warning", "Verify request denied.")
-            this.verifyPrompt = false
-            this.url = ""
-        },
-        acceptVerifyPromptClick() {
-            this.isLoading = true
-            axios.post('/verify', {
-                url: this.url
-            })
-            .then((res) => {
-                if (res.data.error) {
-                    this.setAlert("negative", res.data.error)
-                    return
-                }
-
-                this.setAlert("positive", "Verified!")
-            })
-            .catch((err) => {
-                console.log(err)
-                this.setInternalErrorAlert()
-            })
-            .then(() => {
-                this.isLoading = false
-                this.verifyPrompt = false
-                this.url = ""
-            })
         }
     }
-};
+}
 
 Vue.createApp(app).mount('#app')
