@@ -218,8 +218,8 @@ const app = {
     template: `
         <div id="navbar" class="ui fixed borderless huge inverted menu">
             <div class="header item"><b>VCD</b></div>
-            <a class="item">Issue</a>
-            <a class="item">Verify</a>
+            <a class="item" @click.prevent="selectedPage = 'issue'">Issue</a>
+            <a class="item" @click.prevent="selectedPage = 'verify'">Verify</a>
         </div>
         <div class="ui basic segment">
             <div v-if="isLoading" class="ui active loader"></div>
@@ -231,7 +231,8 @@ const app = {
                     </p>
                 </div>
                 <div id="page-content">
-                    <IssuePage @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
+                    <IssuePage v-if="selectedPage == 'issue'" @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
+                    <VerifyPage v-else-if="selectedPage == 'verify'" @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
                 </div>
             </div>
         </div>
@@ -240,6 +241,7 @@ const app = {
         return {
             isLoading: false,
             alert: null,
+            selectedPage: 'issue'
         }
     },
     components: {
