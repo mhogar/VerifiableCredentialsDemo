@@ -1,8 +1,8 @@
 const VerifyPage = {
     template: `
         <div>
-            <div v-if="verifyPrompt" class="ui raised card">
-                <div class="content">
+            <div v-if="verifyPrompt" class="ui fluid raised card">
+                <div class="center aligned content">
                     <div class="header">{{verifyPrompt.name}}</div>
                     <div class="meta">
                         <span>{{verifyPrompt.domain}}</span>
@@ -12,12 +12,12 @@ const VerifyPage = {
                         <i :class="trustedByVerifierIcon"></i>
                     </h4>
                 </div>
-                <div class="content">
+                <div class="center aligned content">
                     <div class="description">
                         <p>{{verifyPrompt.purpose}}</p>
                     </div>
                 </div>
-                <div class="extra content">
+                <div class="center aligned extra content">
                     <div class="ui buttons">
                         <button type="button" class="ui positive button" @click="acceptVerifyPromptClick()">Accept</button>
                         <div class="or"></div>
@@ -27,7 +27,7 @@ const VerifyPage = {
             </div>
             <div v-else>
                 <h2 class="ui header">Send a Verify Request</h2>
-                <div class="ui action input">
+                <div class="ui fluid action input">
                     <input type="text" v-model="url">
                     <button class="ui button" @click.prevent="submitPresReq">Submit</button>
                 </div>
@@ -107,19 +107,19 @@ const VerifyPage = {
 const IssuePage = {
     template: `
         <div>
-            <div v-if="issuePrompt" class="ui raised card">
-                <div class="content">
+            <div v-if="issuePrompt" class="ui fluid raised card">
+                <div class="center aligned content">
                     <div class="header">{{issuePrompt.name}}</div>
                     <div class="meta">
                         <span>{{issuePrompt.domain}}</span>
                     </div>
                 </div>
-                <div class="content">
+                <div class="center aligned content">
                     <div class="description">
                         <p>{{issuePrompt.purpose}}</p>
                     </div>
                 </div>
-                <div class="extra content">
+                <div class="center aligned extra content">
                     <div class="ui buttons">
                         <button type="button" class="ui positive button" @click="proceedIssuePromptClick()">Proceed</button>
                         <div class="or"></div>
@@ -138,7 +138,7 @@ const IssuePage = {
             </div>
             <div v-else>
                 <h2 class="ui header">Send a Issue Request</h2>
-                <div class="ui action input">
+                <div class="ui fluid action input">
                     <input type="text" v-model="url">
                     <button class="ui button" @click="submitIssReq">Submit</button>
                 </div>
@@ -219,12 +219,12 @@ const app = {
     template: `
         <div id="navbar" class="ui fixed borderless huge inverted menu">
             <div class="header item"><b>VCD</b></div>
-            <a class="item" @click.prevent="selectedPage = 'issue'">Issue</a>
-            <a class="item" @click.prevent="selectedPage = 'verify'">Verify</a>
+            <a class="item" @click.prevent="selectPage('issue')">Issue</a>
+            <a class="item" @click.prevent="selectPage('verify')">Verify</a>
         </div>
         <div class="ui basic segment">
             <div v-if="isLoading" class="ui active loader"></div>
-            <div v-else class="ui centered container grid">
+            <div v-else class="ui container grid">
                 <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
                     <p>
                         {{alert.text}} 
@@ -261,6 +261,10 @@ const app = {
         },
         clearAlert() {
             this.alert = null
+        },
+        selectPage(page) {
+            this.selectedPage = page
+            this.clearAlert()
         }
     }
 }
