@@ -7,12 +7,14 @@ import (
 )
 
 type IssueRequest struct {
-	Fields map[string]string `json:"fields"`
-
-	Subject common.Signature `json:"subject"`
+	Purpose string            `json:"purpose"`
+	Fields  map[string]string `json:"fields"`
+	Issuer  common.Signature  `json:"issuer"`
+	Subject common.Signature  `json:"subject"`
 }
 
 type Issuer interface {
+	CreateIssueRequest() IssueRequest
 	CreateVerifiableCredentials(iss *IssueRequest) (*common.VerifiableCredential, error)
 }
 
@@ -20,6 +22,19 @@ type IssuerService struct {
 	Issuer        Issuer
 	DID           string
 	PrivateKeyURI string
+}
+
+func (s IssuerService) GetIssueHandler(w http.ResponseWriter, _ *http.Request) {
+	iss := s.Issuer.CreateIssueRequest()
+
+	err := common.SignStruct(s.PrivateKeyURI, &iss.Issuer, &iss)
+	if err != nil {
+		common.LogChainError("error signing issuer request", err)
+		common.SendInternalErrorResponse(w)
+		return
+	}
+
+	common.SendJSONResponse(w, http.StatusOK, iss)
 }
 
 func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request) {

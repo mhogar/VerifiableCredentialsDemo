@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"os"
 )
 
 func DecodeJSON(r io.Reader, v interface{}) error {
@@ -26,4 +27,19 @@ func EncodeJSON(v interface{}) (*bytes.Buffer, error) {
 	}
 
 	return buffer, nil
+}
+
+func WriteJSONToFile(uri string, v interface{}) error {
+	f, err := os.Create(uri)
+	if err != nil {
+		return ChainError("error creating JSON file", err)
+	}
+	defer f.Close()
+
+	err = json.NewEncoder(f).Encode(v)
+	if err != nil {
+		return ChainError("error encoding/writing JSON file", err)
+	}
+
+	return nil
 }

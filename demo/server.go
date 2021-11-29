@@ -27,6 +27,8 @@ func (s DemoServer) verifyHandler(w http.ResponseWriter, req *http.Request) {
 
 func (s DemoServer) issueHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
+	case http.MethodGet:
+		s.IssuerService.GetIssueHandler(w, req)
 	case http.MethodPost:
 		s.IssuerService.PostIssueHandler(w, req)
 	default:

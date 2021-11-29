@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -67,16 +66,5 @@ func LoadPublicKeyFromURI(uri string) ([]byte, error) {
 }
 
 func SaveDIDDocument(uri string, doc *DIDDocument) error {
-	f, err := os.Create(getFullURI(uri))
-	if err != nil {
-		return ChainError("error creating DID document file", err)
-	}
-	defer f.Close()
-
-	err = json.NewEncoder(f).Encode(doc)
-	if err != nil {
-		return ChainError("error encoding/writing DID document", err)
-	}
-
-	return nil
+	return WriteJSONToFile(getFullURI(uri), doc)
 }
