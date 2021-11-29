@@ -15,7 +15,7 @@ type IssueRequest struct {
 
 type Issuer interface {
 	CreateIssueRequest() IssueRequest
-	CreateVerifiableCredentials(iss *IssueRequest) (*common.VerifiableCredential, error)
+	CreateVerifiableCredentials(creds *common.VerifiableCredential) error
 }
 
 type IssuerService struct {
@@ -38,23 +38,23 @@ func (s IssuerService) GetIssueHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request) {
-	iss := IssueRequest{}
+	cred := common.VerifiableCredential{}
 
-	err := common.DecodeJSON(req.Body, &iss)
+	err := common.DecodeJSON(req.Body, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
-	err = common.VerifyStructSignature([]byte(iss.Subject.DID), &iss.Subject.Signature, &iss)
+	err = common.VerifyStructSignature([]byte(cred.Subject.DID), &cred.Subject.Signature, &cred)
 	if err != nil {
 		log.Println(err)
 		common.SendErrorResponse(w, http.StatusUnauthorized, "error verifying subject signature")
 		return
 	}
 
-	cred, err := s.Issuer.CreateVerifiableCredentials(&iss)
+	err = s.Issuer.CreateVerifiableCredentials(&cred)
 	if err != nil {
 		common.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return

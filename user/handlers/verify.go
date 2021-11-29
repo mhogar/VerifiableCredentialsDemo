@@ -120,7 +120,7 @@ func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func postVerify(url string) CustomError {
-	f, err := os.Open("wallet/vc.json")
+	f, err := os.Open("wallet/university-issuer.json")
 	if err != nil {
 		common.LogChainError("error opening vc file", err)
 		return InternalError()

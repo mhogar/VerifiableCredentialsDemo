@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"vcd/common"
 	"vcd/issuer"
 )
@@ -16,8 +17,8 @@ type IssueRequestResponse struct {
 }
 
 type IssueRequest struct {
-	URL     string              `json:"url"`
-	Request issuer.IssueRequest `json:"request"`
+	URL    string            `json:"url"`
+	Fields map[string]string `json:"fields"`
 }
 
 func IssueHandler(w http.ResponseWriter, req *http.Request) {
@@ -89,16 +90,16 @@ func getIssue(url string) (*IssueRequestResponse, CustomError) {
 }
 
 func postIssueHandler(w http.ResponseWriter, req *http.Request) {
-	body := IssueRequest{}
+	iss := IssueRequest{}
 
-	err := common.DecodeJSON(req.Body, &body)
+	err := common.DecodeJSON(req.Body, &iss)
 	if err != nil {
 		common.LogChainError("error decoding post issue body", err)
 		common.SendErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
-	cerr := postIssue(body.URL, &body.Request)
+	cerr := postIssue(&iss)
 	if cerr.Type == TypeClientError {
 		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
 		return
@@ -111,21 +112,32 @@ func postIssueHandler(w http.ResponseWriter, req *http.Request) {
 	common.SendSuccessResponse(w)
 }
 
-func postIssue(url string, iss *issuer.IssueRequest) CustomError {
-	err := common.SignStruct(PRIVATE_KEY_URI, &iss.Subject, iss)
+func postIssue(iss *IssueRequest) CustomError {
+	cred := common.VerifiableCredential{}
+
+	bytes, err := os.ReadFile("DID.cert")
+	if err != nil {
+		common.LogChainError("error reading DID file", err)
+		return InternalError()
+	}
+	cred.Subject.DID = string(bytes)
+
+	cred.Credentials = iss.Fields
+
+	err = common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, cred)
 	if err != nil {
 		common.LogChainError("error signing issue request", err)
 		return InternalError()
 	}
 
-	body, err := sendRequest(http.MethodPost, url, iss)
+	body, err := sendRequest(http.MethodPost, iss.URL, &cred)
 	if err != nil {
 		log.Println(err)
 		return InternalError()
 	}
 	defer body.Close()
 
-	cred := common.VerifiableCredential{}
+	cred = common.VerifiableCredential{}
 	err = common.DecodeJSON(body, &cred)
 	if err != nil {
 		common.LogChainError("error decoding verifiable credential", err)

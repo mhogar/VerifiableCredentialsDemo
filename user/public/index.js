@@ -45,9 +45,6 @@ const VerifyPage = {
             return this.verifyPrompt.trusted_by_issuer ? 'check circle green icon' : 'close red icon'
         }
     },
-    mounted() {
-        console.log('mounted ', this.verifyPrompt)
-    },
     methods: {
         submitPresReq() {
             this.$emit('clearAlert')
@@ -77,7 +74,7 @@ const VerifyPage = {
         },
         denyVerifyPromptClick() {
             this.$parent.setAlert("warning", "Verify request denied.")
-            this.verifyPrompt = false
+            this.verifyPrompt = null
             this.url = ""
         },
         acceptVerifyPromptClick() {
@@ -98,14 +95,124 @@ const VerifyPage = {
                 this.$emit('setAlert', "negative", "An internal error occurred. Try again later.")
             })
             .then(() => {
-                this.$parent.isLoading = false
-                this.verifyPrompt = false
+                this.$emit('loading', false)
+                this.verifyPrompt = null
                 this.url = ""
             })
         }
     }
 }
 
+const IssuePage = {
+    template: `
+        <div>
+            <div v-if="issuePrompt" class="ui raised card">
+                <div class="content">
+                    <div class="header">{{issuePrompt.name}}</div>
+                    <div class="meta">
+                        <span>{{issuePrompt.domain}}</span>
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="description">
+                        <p>{{issuePrompt.purpose}}</p>
+                    </div>
+                </div>
+                <div class="extra content">
+                    <div class="ui buttons">
+                        <button type="button" class="ui positive button" @click="proceedIssuePromptClick()">Proceed</button>
+                        <div class="or"></div>
+                        <button type="button" class="ui negative button" @click="abortIssuePromptClick">Abort</button>
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="fieldsForm">
+                <div v-for="(value,key) in fieldsForm">
+                    <div class="ui fluid labeled input formInput">
+                        <div class="ui label">{{key}}</div>
+                        <input type="text" v-model="fieldsForm[key]">
+                    </div>
+                </div>
+                <button class="ui button" @click="submitIssueButtonClick">Submit</button>
+            </div>
+            <div v-else>
+                <h2 class="ui header">Send a Issue Request</h2>
+                <div class="ui action input">
+                    <input type="text" v-model="url">
+                    <button class="ui button" @click="submitIssReq">Submit</button>
+                </div>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            issuePrompt: null,
+            fieldsForm: null,
+            url: "http://localhost:8082/issue"
+        }
+    },
+    methods: {
+        submitIssReq() {
+            this.$emit('clearAlert')
+            this.$emit('loading', true)
+
+            axios.get('/issue', {
+                params: {
+                    url: this.url
+                },
+                validateStatus: (status) => status < 500
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.$emit('setAlert', "negative", res.data.error)
+                    return
+                }
+
+                this.issuePrompt = res.data
+            })
+            .catch((err) => {
+                console.log(err)
+                this.$emit('setAlert', "negative", "An internal error occurred. Try again later.")
+            })
+            .then(() => {
+                this.$emit('loading', false)
+            })
+        },
+        abortIssuePromptClick() {
+            this.$parent.setAlert("warning", "Issue request aborted.")
+            this.issuePrompt = null
+            this.url = ""
+        },
+        proceedIssuePromptClick() {
+            this.fieldsForm = this.issuePrompt.fields
+            this.issuePrompt = null
+        },
+        submitIssueButtonClick() {
+            this.$emit('loading', true)
+            axios.post('/issue', {
+                url: this.url,
+                fields: this.fieldsForm
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.$emit('setAlert', "negative", res.data.error)
+                    return
+                }
+
+                this.$emit('setAlert', "positive", "Verifiable Credentials Created!")
+            })
+            .catch((err) => {
+                console.log(err)
+                this.$emit('setAlert', "negative", "An internal error occurred. Try again later.")
+            })
+            .then(() => {
+                this.$emit('loading', false)
+                this.fieldsForm = null
+                this.url = ""
+            })
+        }
+    }
+}
 
 const app = {
     template: `
@@ -124,7 +231,7 @@ const app = {
                     </p>
                 </div>
                 <div id="page-content">
-                    <VerifyPage @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
+                    <IssuePage @loading="changeLoading" @setAlert="setAlert" @clearAlert="clearAlert" />
                 </div>
             </div>
         </div>
@@ -136,7 +243,8 @@ const app = {
         }
     },
     components: {
-        VerifyPage
+        VerifyPage,
+        IssuePage
     },
     methods: {
         changeLoading(loading) {

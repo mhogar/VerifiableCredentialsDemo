@@ -35,8 +35,8 @@ func (Issuer) CreateIssueRequest() issuer.IssueRequest {
 	return issuer.IssueRequest{
 		Purpose: "Create ID token from login credentials",
 		Fields: map[string]string{
-			"username": "",
-			"password": "",
+			"Username": "",
+			"Password": "",
 		},
 		Issuer: common.Signature{
 			DID: issuerDID,
@@ -44,18 +44,17 @@ func (Issuer) CreateIssueRequest() issuer.IssueRequest {
 	}
 }
 
-func (Issuer) CreateVerifiableCredentials(iss *issuer.IssueRequest) (*common.VerifiableCredential, error) {
+func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) error {
 	//NOTE: in real environment would verify login
+	log.Println("Username:", cred.Credentials["Username"])
 
-	return &common.VerifiableCredential{
-		Credentials: map[string]string{
-			"FirstName":     "Alice",
-			"LastName":      "Student",
-			"StudentNumber": "123456",
-			"Email":         "alice@university.ca",
-		},
-		Subject: iss.Subject,
-	}, nil
+	cred.Credentials = map[string]string{
+		"FirstName":     "Alice",
+		"LastName":      "Student",
+		"StudentNumber": "123456",
+		"Email":         "alice@university.ca",
+	}
+	return nil
 }
 
 func main() {
