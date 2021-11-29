@@ -3,7 +3,6 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"os"
 	"vcd/common"
 	"vcd/verifier"
 )
@@ -14,6 +13,7 @@ type PresentationRequestResponse struct {
 	Name            string `json:"name"`
 	Domain          string `json:"domain"`
 	Purpose         string `json:"purpose"`
+	Issuer          string `json:"issuer"`
 	TrustedByIssuer bool   `json:"trusted_by_issuer"`
 }
 
@@ -79,6 +79,7 @@ func getVerify(url string) (*PresentationRequestResponse, CustomError) {
 		Name:            doc.Name,
 		Purpose:         pres.Purpose,
 		Domain:          doc.Domain,
+		Issuer:          pres.Issuer,
 		TrustedByIssuer: false,
 	}
 
@@ -106,7 +107,7 @@ func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cerr := postVerify(url)
+	cerr := postVerify(url, body["issuer"])
 	if cerr.Type == TypeClientError {
 		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
 		return
@@ -119,19 +120,17 @@ func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	common.SendSuccessResponse(w)
 }
 
-func postVerify(url string) CustomError {
-	f, err := os.Open("wallet/university-issuer.json")
+func postVerify(url string, issuer string) CustomError {
+	creds := map[string]common.VerifiableCredential{}
+	err := common.LoadJSONFromFile(VC_URI, &creds)
 	if err != nil {
-		common.LogChainError("error opening vc file", err)
+		common.LogChainError("error loading verifiable credentials", err)
 		return InternalError()
 	}
-	defer f.Close()
 
-	cred := common.VerifiableCredential{}
-	err = common.DecodeJSON(f, &cred)
-	if err != nil {
-		common.LogChainError("error decoding credential JSON", err)
-		return InternalError()
+	cred, ok := creds[issuer]
+	if !ok {
+		return ClientError("No credentials for issuer.")
 	}
 
 	err = common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, &cred)

@@ -29,6 +29,16 @@ func EncodeJSON(v interface{}) (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
+func LoadJSONFromFile(uri string, v interface{}) error {
+	f, err := os.Open(uri)
+	if err != nil {
+		return ChainError("error opening JSON file", err)
+	}
+	defer f.Close()
+
+	return DecodeJSON(f, v)
+}
+
 func WriteJSONToFile(uri string, v interface{}) error {
 	f, err := os.Create(uri)
 	if err != nil {

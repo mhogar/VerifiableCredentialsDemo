@@ -80,7 +80,8 @@ const VerifyPage = {
         acceptVerifyPromptClick() {
             this.$emit('loading', true)
             axios.post('/verify', {
-                url: this.url
+                url: this.url,
+                issuer: this.verifyPrompt.issuer
             })
             .then((res) => {
                 if (res.data.error) {

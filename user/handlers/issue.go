@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"vcd/common"
 	"vcd/issuer"
 )
+
+const VC_URI = "wallet/verifiable-credentials.json"
 
 type IssueRequestResponse struct {
 	Name    string            `json:"name"`
@@ -144,9 +145,17 @@ func postIssue(iss *IssueRequest) CustomError {
 		return InternalError()
 	}
 
-	err = common.WriteJSONToFile(fmt.Sprintf("wallet/%s.json", cred.Issuer.DID), &cred)
+	creds := map[string]common.VerifiableCredential{}
+	err = common.LoadJSONFromFile(VC_URI, &creds)
 	if err != nil {
-		common.LogChainError("error saving verifiable credential", err)
+		common.LogChainError("error loading verifiable credentials", err)
+		return InternalError()
+	}
+
+	creds[cred.Issuer.DID] = cred
+	err = common.WriteJSONToFile(VC_URI, &creds)
+	if err != nil {
+		common.LogChainError("error saving verifiable credentials", err)
 		return InternalError()
 	}
 
