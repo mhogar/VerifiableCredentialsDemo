@@ -55,10 +55,12 @@ func postVerify(body *PostVerifyBody) CustomError {
 		return InternalError()
 	}
 
-	_, err = sendRequest(http.MethodPost, body.ServiceURL, &cred)
+	_, cerr, err := sendRequest(http.MethodPost, body.ServiceURL, &cred)
 	if err != nil {
 		log.Println(err)
-		return InternalError()
+	}
+	if cerr.Type != TypeNoError {
+		return cerr
 	}
 
 	return NoError()

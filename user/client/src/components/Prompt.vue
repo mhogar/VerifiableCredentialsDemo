@@ -109,8 +109,8 @@ export default {
         denyButtonClicked() {
             this.denyCallback(alertFactory.createWarningAlert('Request denied.'))
         },
-        submitFormCallback(alert) {
-            this.acceptCallback(alert)
+        submitFormCallback(alert, reloadCreds) {
+            this.acceptCallback(alert, reloadCreds)
         },
         verify() {
             this.isLoading = true

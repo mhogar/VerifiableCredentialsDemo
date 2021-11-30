@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -29,7 +30,7 @@ func (Verifier) CreatePresentationRequest() common.PresentationRequest {
 }
 
 func (Verifier) VerifyCredentials(cred *common.VerifiableCredential) error {
-	log.Printf("Verified: %s %s, %s %s", cred.Credentials["FirstName"], cred.Credentials["LastName"], cred.Credentials["StudentNumber"], cred.Credentials["Email"])
+	log.Printf("(Verifier) Verified: %s %s, %s %s", cred.Credentials["FirstName"], cred.Credentials["LastName"], cred.Credentials["StudentNumber"], cred.Credentials["Email"])
 	return nil
 }
 
@@ -57,8 +58,12 @@ func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 }
 
 func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) error {
-	//NOTE: in real environment would verify login
-	log.Println("Username:", cred.Credentials["Username"])
+	log.Println("(Issuer) Login attempt:", cred.Credentials["Username"])
+
+	//NOTE: in real environment would verify login properly
+	if cred.Credentials["Username"] != "username" || cred.Credentials["Password"] != "password" {
+		return errors.New("invalid username and/or password")
+	}
 
 	cred.Credentials = map[string]string{
 		"First Name":     "Alice",

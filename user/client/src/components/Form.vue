@@ -1,17 +1,21 @@
 <template>
+<div>
+    <Alert ref="alert" />
     <LoadingSegment :isLoading="isLoading">
         <form class="ui form">
             <div class="field" v-for="field in fields" :key="field.name">
                 <label>{{field.name}}</label>
                 <input :type="field.type" v-model="values[field.name]">
             </div>
+            <button type="submit" :class="'ui primary button' + submitDisabledClass" @click.prevent="submit">Submit</button>
+            <button class="ui button" @click.prevent="cancel">Cancel</button>
         </form>
-        <button :class="'ui primary button' + submitDisabled" @click.prevent="submit">Submit</button>
-        <button class="ui button" @click.prevent="cancel">Cancel</button>
     </LoadingSegment>
+</div>
 </template>
 
 <script>
+import Alert from './Alert.vue'
 import LoadingSegment from './LoadingSegment.vue'
 
 import alertFactory from '../common/alertFactory'
@@ -25,7 +29,7 @@ export default {
         }
     },
     components: {
-        LoadingSegment
+        Alert, LoadingSegment
     },
     props: {
         url: String,
@@ -36,31 +40,41 @@ export default {
         this.fields.forEach(field => this.values[field.name] = '');
     },
     computed: {
-        submitDisabled() {
-            return Object.values(this.values).find(val => !val) != null ? ' disabled' : ''
+        canSubmit() {
+            return Object.values(this.values).find(val => !val) == null
+        },
+        submitDisabledClass() {
+            return this.canSubmit ? '' : ' disabled'
         }
     },
     methods: {
+        setAlert(alert) {
+            this.$refs.alert.setAlert(alert)
+        },
         cancel() {
             this.submitCallback(alertFactory.createWarningAlert('Issue request canceled.'))
         },
         submit() {
+            if (!this.canSubmit) {
+                return
+            }
+
             this.isLoading = true
-            http.post('issue', {
+            http.post('/issue', {
                 service_url: this.url,
                 fields: this.values
             })
             .then((res) => {
                 if (res.data.error) {
-                    this.submitCallback(alertFactory.createErrorAlert('Create VC Failed: ' + res.data.error))
+                    this.setAlert(alertFactory.createErrorAlert('Create VC Failed: ' + res.data.error))
                     return
                 }
 
-                this.submitCallback(alertFactory.createSuccessAlert('Verified!'))
+                this.submitCallback(alertFactory.createSuccessAlert('Verified!'), true)
             })
             .catch((err) => {
                 console.log(err)
-                this.submitCallback(alertFactory.createInternalErrorAlert())
+                this.setAlert(alertFactory.createInternalErrorAlert())
             })
             .then(() => {
                 this.isLoading = false

@@ -4,14 +4,7 @@
         <div class="header item"><b>VCD</b></div>
     </div>
     <div class="ui container">
-        <div class="ui center aligned basic segment">
-            <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
-                <p class="center aligned">
-                    {{alert.text}} 
-                    <i class="close icon" @click="clearAlert"></i>
-                </p>
-            </div>
-        </div>
+        <Alert ref="alert" />
         <div v-if="!prompt">
             <LoadingSegment :isLoading="isQueryLoading">
                 <form>
@@ -25,11 +18,14 @@
                 </form>
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
-                <div class="ui stackable three column grid">
+                <div v-if="hasCreds" class="ui stackable three column grid">
                     <div class="column">
                         <CredCard v-for="(cred, issuer) in creds" :key="issuer" :issuer="issuer" :cred="cred" />
                     </div>
                 </div>
+                <h2 v-else class="ui centered aligned header">
+                    <div class="sub header">No credentials found. Create some!</div>
+                </h2>
             </LoadingSegment>
         </div>
         <Prompt v-else :prompt="prompt" :acceptCallback="acceptPromptCallback" :denyCallback="promptCallback" />
@@ -38,6 +34,7 @@
 </template>
 
 <script>
+import Alert from './components/Alert.vue'
 import LoadingSegment from './components/LoadingSegment.vue'
 import CredCard from './components/CredCard.vue'
 import Prompt from './components/Prompt.vue'
@@ -50,14 +47,13 @@ export default {
         return {
             isQueryLoading: false,
             areCredsLoading: false,
-            alert: null,
             creds: {},
             url: 'http://localhost:8084/issue',
             prompt: null
         }
     },
     components: {
-        LoadingSegment, CredCard, Prompt
+        Alert, LoadingSegment, CredCard, Prompt
     },
     created() {
         this.loadCreds()
@@ -65,14 +61,14 @@ export default {
     computed: {
         querySubmitDisabled() {
             return this.url ? '' : ' disabled'
+        },
+        hasCreds() {
+            return Object.keys(this.creds).length > 0
         }
     },
     methods: {
         setAlert(alert) {
-            this.alert = alert
-        },
-        clearAlert() {
-            this.alert = null
+            this.$refs.alert.setAlert(alert)
         },
         loadCreds() {
             this.areCredsLoading = true
@@ -143,11 +139,6 @@ body {
 }
 
 #alert-box {
-    width: 100%;
-}
-
-#page-content {
-    padding-top: 4rem;
     width: 100%;
 }
 

@@ -55,10 +55,12 @@ func postIssue(body *IssuePostBody) CustomError {
 		return InternalError()
 	}
 
-	res, err := sendRequest(http.MethodPost, body.ServiceURL, &cred)
+	res, cerr, err := sendRequest(http.MethodPost, body.ServiceURL, &cred)
 	if err != nil {
 		log.Println(err)
-		return InternalError()
+	}
+	if cerr.Type != TypeNoError {
+		return cerr
 	}
 	defer res.Close()
 

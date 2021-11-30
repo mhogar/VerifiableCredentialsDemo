@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"vcd/common"
 )
@@ -39,10 +40,12 @@ func GetQueryHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func getQuery(url string) (*QueryResponse, CustomError) {
-	body, err := sendRequest(http.MethodGet, url, nil)
+	body, cerr, err := sendRequest(http.MethodGet, url, nil)
 	if err != nil {
-		common.LogChainError("error sending query request", err)
-		return nil, ClientError("Invalid URL.")
+		log.Println(err)
+	}
+	if cerr.Type != TypeNoError {
+		return nil, cerr
 	}
 	defer body.Close()
 
