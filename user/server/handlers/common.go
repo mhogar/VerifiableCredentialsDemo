@@ -42,3 +42,14 @@ func sendRequest(method string, url string, body interface{}) (io.ReadCloser, er
 
 	return res.Body, nil
 }
+
+func loadVerifiableCredentials() (*CredentialsMap, error) {
+	creds := CredentialsMap{}
+
+	err := common.LoadJSONFromFile(VC_URI, &creds)
+	if err != nil {
+		return nil, common.ChainError("error loading JSON file", err)
+	}
+
+	return &creds, nil
+}

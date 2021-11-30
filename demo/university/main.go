@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"vcd/common"
 	"vcd/demo"
@@ -12,12 +13,15 @@ import (
 const issuerDID = "university-issuer"
 const verifierDID = "university-verifier"
 
+var port int
+
 type Verifier struct{}
 
 func (Verifier) CreatePresentationRequest() common.PresentationRequest {
 	return common.PresentationRequest{
-		Purpose: "Logs first and last name.",
-		Issuer:  issuerDID,
+		ServiceURL: fmt.Sprintf("http://localhost:%d/verify", port),
+		Purpose:    "Logs first and last name.",
+		Issuer:     issuerDID,
 		Entity: common.Signature{
 			DID: verifierDID,
 		},
@@ -33,8 +37,9 @@ type Issuer struct{}
 
 func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 	return common.PresentationRequest{
-		Type:    "iss:form",
-		Purpose: "Create ID token from login credentials",
+		Type:       "iss:form",
+		ServiceURL: fmt.Sprintf("http://localhost:%d/issue", port),
+		Purpose:    "Create ID token from login credentials",
 		Fields: map[string]string{
 			"Username": "",
 			"Password": "",
@@ -59,8 +64,10 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 }
 
 func main() {
-	port := flag.Int("port", 8084, "port to run the server on")
+	port_ptr := flag.Int("port", 8084, "port to run the server on")
 	flag.Parse()
+
+	port = *port_ptr
 
 	server := demo.DemoServer{
 		PublicURL: "./university/public",
@@ -74,5 +81,5 @@ func main() {
 			PrivateKeyURI: "university/keys/issuer.private.key",
 		},
 	}
-	server.RunServer(*port)
+	server.RunServer(port)
 }

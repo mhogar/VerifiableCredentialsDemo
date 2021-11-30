@@ -1,5 +1,5 @@
 <template>
-<div>
+<LoadingSegment :isLoading="isLoading">
     <div id="type-header" class="ui basic segment">
         <h1 class="ui center aligned header">
             {{typeTitle}}
@@ -32,13 +32,24 @@
             </div>
         </div>
     </div>
-</div>
+</LoadingSegment>
 </template>
 
 <script>
+import LoadingSegment from './LoadingSegment.vue'
+
 import alertFactory from '../common/alertFactory'
+import http from '../common/http'
 
 export default {
+    data() {
+        return {
+            isLoading: false
+        }
+    },
+    components: {
+        LoadingSegment
+    },
     props: {
         prompt: Object,
         acceptCallback: Function,
@@ -80,10 +91,37 @@ export default {
     },
     methods: {
         acceptButtonClicked() {
-            this.acceptCallback(alertFactory.createSuccessAlert('Request accepted!'))
+            if (this.prompt.type === 'verify') {
+                this.verify()
+                return
+            }
+
+            this.acceptCallback(alertFactory.createSuccessAlert('Issue request accepted!'))
         },
         denyButtonClicked() {
             this.denyCallback(alertFactory.createWarningAlert('Request denied.'))
+        },
+        verify() {
+            this.isLoading = true
+            http.post('/verify', {
+                service_url: this.prompt.service_url,
+                credential_id: this.prompt.issuer
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.acceptCallback(alertFactory.createErrorAlert('Request Failed: ' + res.data.error))
+                    return
+                }
+
+                this.acceptCallback(alertFactory.createSuccessAlert('Verified!'))
+            })
+            .catch((err) => {
+                console.log(err)
+                this.acceptCallback(alertFactory.createInternalErrorAlert())
+            })
+            .then(() => {
+                this.isLoading = false
+            })
         },
     }
 }

@@ -48,7 +48,7 @@ export default {
             areCredsLoading: false,
             alert: null,
             creds: {},
-            url: 'http://localhost:8084/issue',
+            url: 'http://localhost:8084/verify',
             prompt: null
         }
     },
@@ -96,7 +96,7 @@ export default {
             })
             .then((res) => {
                 if (res.data.error) {
-                    this.setAlert(alertFactory.createErrorAlert(res.data.error))
+                    this.setAlert(alertFactory.createErrorAlert('Query Failed: ' + res.data.error))
                     return
                 }
 
@@ -118,9 +118,12 @@ export default {
                 this.setAlert(alert)
             }
         },
-        acceptPromptCallback(alert) {
+        acceptPromptCallback(alert, reloadCreds) {
             this.promptCallback(alert)
-            this.loadCreds()
+
+            if (reloadCreds) {
+                this.loadCreds()
+            }
         }
     }
 }
