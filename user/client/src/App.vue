@@ -14,11 +14,13 @@
         </div>
         <div v-if="!prompt">
             <LoadingSegment :isLoading="isQueryLoading">
-                <h2 class="ui center aligned header">Start a Query</h2>
-                <div class="ui fluid action input">
-                    <input type="text" v-model="url">
-                    <button :class="'ui button' + querySubmitDisabled" @click="querySubmit()">Submit</button>
-                </div>
+                <form>
+                   <h2 class="ui center aligned header">Start a Query</h2>
+                    <div class="ui fluid action input">
+                        <input type="text" v-model="url">
+                        <button type="submit" :class="'ui button' + querySubmitDisabled" @click.prevent="querySubmit()">Submit</button>
+                    </div>
+                </form>
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
                 <div class="ui stackable three column grid">
