@@ -8,8 +8,6 @@ import (
 	"vcd/issuer"
 )
 
-const VC_URI = "wallet/verifiable-credentials.json"
-
 type IssueRequestResponse struct {
 	Name    string            `json:"name"`
 	Domain  string            `json:"domain"`

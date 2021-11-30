@@ -4,6 +4,14 @@
             <div class="header item"><b>VCD</b></div>
         </div>
         <div class="ui container">
+            <div class="ui center aligned basic segment">
+                <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
+                    <p class="center aligned">
+                        {{alert.text}} 
+                        <i class="close icon" @click="clearAlert()"></i>
+                    </p>
+                </div>
+            </div>
             <LoadingSegment :isLoading="isQueryLoading">
                 <div class="ui fluid action input">
                     <input type="text" v-model="url">
@@ -12,7 +20,7 @@
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
                 <div class="ui cards">
-                    <CredCard v-for="cred in creds" :key="cred.name" :content="cred" />
+                    <CredCard v-for="(cred, issuer) in creds" :key="issuer" :issuer="issuer" :cred="cred" />
                 </div>
             </LoadingSegment>
         </div>
@@ -23,14 +31,15 @@
 import LoadingSegment from './components/LoadingSegment.vue'
 import CredCard from './components/CredCard.vue'
 
-const fs = require('fs')
+import http from './common/http'
 
 export default {
     data() {
         return {
+            alert: null,
             isQueryLoading: false,
             areCredsLoading: false,
-            creds: []
+            creds: {}
         }
     },
     components: {
@@ -40,29 +49,35 @@ export default {
         this.loadCreds()
     },
     methods: {
+        setAlert(type, text) {
+            this.alert = {
+                type: type,
+                text: text
+            }
+        },
+        clearAlert() {
+            this.alert = null
+        },
         loadCreds() {
             this.areCredsLoading = true
-            fs.readFile('../wallet/verifiable-credentials.json', 'utf8', (err, data) => {
-                this.areCredsLoading = false
-                if (err) {
-                    console.log(err)
+            http.get('/creds', {
+                validateStatus: (status) => status < 500
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.setAlert("negative", res.data.error)
                     return
                 }
 
-                console.log(data)
+                this.creds = res.data
             })
-
-            // this.creds = [
-            //     {
-            //         name: 'Student ID',
-            //         issuer: 'University Issuer',
-            //         issuer_did: 'university-issuer',
-            //         fields: {
-            //             'FirstName': 'Alice',
-            //             'LastName': 'Student'
-            //         }
-            //     }
-            // ]
+            .catch((err) => {
+                console.log(err)
+                this.setAlert("negative", "An internal error occurred. Try again later.")
+            })
+            .then(() => {
+                this.areCredsLoading = false
+            })
         }
     }
 }

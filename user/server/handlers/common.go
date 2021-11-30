@@ -7,6 +7,8 @@ import (
 	"vcd/common"
 )
 
+type CredentialsMap map[string]common.VerifiableCredential
+
 func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {
 	var buffer io.Reader = nil
 

@@ -1,3 +1,2 @@
 .vscode/
-user/node_modules
-clinet/node_modules
+user/client/node_modules

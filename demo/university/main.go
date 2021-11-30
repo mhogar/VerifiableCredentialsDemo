@@ -58,7 +58,7 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 }
 
 func main() {
-	port := flag.Int("port", 8082, "port to run the server on")
+	port := flag.Int("port", 8083, "port to run the server on")
 	flag.Parse()
 
 	server := demo.DemoServer{
