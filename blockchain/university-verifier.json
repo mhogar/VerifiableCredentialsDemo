@@ -1,8 +1,8 @@
 {
     "name": "University Verifier",
-    "domain": "localhost:8082",
+    "domain": "localhost:8084",
     "route": "verifier.cert",
     "signatures": {
-        "university-issuer": "h6WVf4UzyrQgAzCHCfh3a5o6iavnYFBFvzS388+GwgoTmn75jez2O02BNuWbH0vWbg/1t/AkFWIuUsvYtBuQjp8pz9rvp2Qj9dxpF5pvf8mpgqq+E32EpABlv6m/ITtxc7YzR3Bu7b/GbPF1U4ogts3lSYbsMww3sPmkOW1bEyQ"
+        "university-issuer": "V2Oc01+kp073PqKgH5ahfBAPxG19QVCWfjGQJV96+r6cTCSDTv5JSEsLYmaC5fPUqVausidPtnEyG9+GDJwejySJd83X2yTWMhuvaq36ntyTwZrsm9e4BnpeGxXyZi1l1OFXzSlj344iv/HuHSKXtqOdkn7mo9miECbe3eeTxzk"
     }
 }

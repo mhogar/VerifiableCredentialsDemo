@@ -1,71 +1,81 @@
 <template>
-    <div>
-        <div id="navbar" class="ui fixed borderless huge inverted menu">
-            <div class="header item"><b>VCD</b></div>
-        </div>
-        <div class="ui container">
-            <div class="ui center aligned basic segment">
-                <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
-                    <p class="center aligned">
-                        {{alert.text}} 
-                        <i class="close icon" @click="clearAlert()"></i>
-                    </p>
-                </div>
+<div>
+    <div id="navbar" class="ui fixed borderless huge inverted menu">
+        <div class="header item"><b>VCD</b></div>
+    </div>
+    <div class="ui container">
+        <div class="ui center aligned basic segment">
+            <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
+                <p class="center aligned">
+                    {{alert.text}} 
+                    <i class="close icon" @click="clearAlert()"></i>
+                </p>
             </div>
+        </div>
+        <div v-if="!prompt">
             <LoadingSegment :isLoading="isQueryLoading">
+                <h2 class="ui center aligned header">Start a Query</h2>
                 <div class="ui fluid action input">
                     <input type="text" v-model="url">
-                    <button class="ui button">Submit</button>
+                    <button :class="'ui button' + querySubmitDisabled" @click="querySubmit()">Submit</button>
                 </div>
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
-                <div class="ui cards">
-                    <CredCard v-for="(cred, issuer) in creds" :key="issuer" :issuer="issuer" :cred="cred" />
+                <div class="ui stackable three column grid">
+                    <div class="column">
+                        <CredCard v-for="(cred, issuer) in creds" :key="issuer" :issuer="issuer" :cred="cred" />
+                    </div>
                 </div>
             </LoadingSegment>
         </div>
+        <Prompt v-else :prompt="prompt" :acceptCallback="acceptPromptCallback" :denyCallback="promptCallback" />
     </div>
+</div>
 </template>
 
 <script>
 import LoadingSegment from './components/LoadingSegment.vue'
 import CredCard from './components/CredCard.vue'
+import Prompt from './components/Prompt.vue'
 
+import alertFactory from './common/alertFactory'
 import http from './common/http'
 
 export default {
     data() {
         return {
-            alert: null,
             isQueryLoading: false,
             areCredsLoading: false,
-            creds: {}
+            alert: null,
+            creds: {},
+            url: 'http://localhost:8084/issue',
+            prompt: null
         }
     },
     components: {
-        LoadingSegment, CredCard
+        LoadingSegment, CredCard, Prompt
     },
     created() {
         this.loadCreds()
     },
+    computed: {
+        querySubmitDisabled() {
+            return this.url ? '' : ' disabled'
+        }
+    },
     methods: {
-        setAlert(type, text) {
-            this.alert = {
-                type: type,
-                text: text
-            }
+        setAlert(alert) {
+            this.alert = alert
         },
         clearAlert() {
             this.alert = null
         },
         loadCreds() {
             this.areCredsLoading = true
-            http.get('/creds', {
-                validateStatus: (status) => status < 500
-            })
+            http.get('/creds')
             .then((res) => {
                 if (res.data.error) {
-                    this.setAlert("negative", res.data.error)
+                    this.setAlert(alertFactory.createErrorAlert(res.data.error))
                     return
                 }
 
@@ -73,11 +83,44 @@ export default {
             })
             .catch((err) => {
                 console.log(err)
-                this.setAlert("negative", "An internal error occurred. Try again later.")
+                this.setAlert(alertFactory.createInternalErrorAlert())
             })
             .then(() => {
                 this.areCredsLoading = false
             })
+        },
+        querySubmit() {
+            this.isQueryLoading = true
+            http.get('/query', {
+                url: this.url
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.setAlert(alertFactory.createErrorAlert(res.data.error))
+                    return
+                }
+
+                this.prompt = res.data
+            })
+            .catch((err) => {
+                console.log(err)
+                this.setAlert(alertFactory.createInternalErrorAlert())
+            })
+            .then(() => {
+                this.isQueryLoading = false
+            })
+        },
+        promptCallback(alert) {
+            this.url = ''
+            this.prompt = null
+
+            if (alert) {
+                this.setAlert(alert)
+            }
+        },
+        acceptPromptCallback(alert) {
+            this.promptCallback(alert)
+            this.loadCreds()
         }
     }
 }

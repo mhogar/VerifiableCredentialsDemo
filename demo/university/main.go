@@ -14,11 +14,11 @@ const verifierDID = "university-verifier"
 
 type Verifier struct{}
 
-func (Verifier) CreatePresentationRequest() verifier.PresentationRequest {
-	return verifier.PresentationRequest{
+func (Verifier) CreatePresentationRequest() common.PresentationRequest {
+	return common.PresentationRequest{
 		Purpose: "Logs first and last name.",
 		Issuer:  issuerDID,
-		Verifier: common.Signature{
+		Entity: common.Signature{
 			DID: verifierDID,
 		},
 	}
@@ -31,14 +31,15 @@ func (Verifier) VerifyCredentials(cred *common.VerifiableCredential) error {
 
 type Issuer struct{}
 
-func (Issuer) CreateIssueRequest() issuer.IssueRequest {
-	return issuer.IssueRequest{
+func (Issuer) CreatePresentationRequest() common.PresentationRequest {
+	return common.PresentationRequest{
+		Type:    "iss:form",
 		Purpose: "Create ID token from login credentials",
 		Fields: map[string]string{
 			"Username": "",
 			"Password": "",
 		},
-		Issuer: common.Signature{
+		Entity: common.Signature{
 			DID: issuerDID,
 		},
 	}
@@ -58,7 +59,7 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 }
 
 func main() {
-	port := flag.Int("port", 8083, "port to run the server on")
+	port := flag.Int("port", 8084, "port to run the server on")
 	flag.Parse()
 
 	server := demo.DemoServer{

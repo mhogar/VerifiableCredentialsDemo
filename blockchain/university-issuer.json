@@ -1,6 +1,6 @@
 {
     "name": "University Issuer",
-    "domain": "localhost:8082",
+    "domain": "localhost:8084",
     "route": "issuer.cert",
     "signatures": {}
 }

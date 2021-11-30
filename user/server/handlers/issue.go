@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"vcd/common"
-	"vcd/issuer"
 )
 
 type IssueRequestResponse struct {
@@ -22,8 +21,8 @@ type IssueRequest struct {
 
 func IssueHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case http.MethodGet:
-		getIssueHandler(w, req)
+	// case http.MethodGet:
+	// 	getIssueHandler(w, req)
 	case http.MethodPost:
 		postIssueHandler(w, req)
 	default:
@@ -31,62 +30,62 @@ func IssueHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getIssueHandler(w http.ResponseWriter, req *http.Request) {
-	pres, cerr := getIssue(req.URL.Query().Get("url"))
-	if cerr.Type == TypeClientError {
-		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
-		return
-	}
-	if cerr.Type == TypeInternalError {
-		common.SendInternalErrorResponse(w)
-		return
-	}
+// func getIssueHandler(w http.ResponseWriter, req *http.Request) {
+// 	pres, cerr := getIssue(req.URL.Query().Get("url"))
+// 	if cerr.Type == TypeClientError {
+// 		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
+// 		return
+// 	}
+// 	if cerr.Type == TypeInternalError {
+// 		common.SendInternalErrorResponse(w)
+// 		return
+// 	}
 
-	common.SendJSONResponse(w, http.StatusOK, pres)
-}
+// 	common.SendJSONResponse(w, http.StatusOK, pres)
+// }
 
-func getIssue(url string) (*IssueRequestResponse, CustomError) {
-	body, err := sendRequest(http.MethodGet, url, nil)
-	if err != nil {
-		common.LogChainError("error sending get issue request", err)
-		return nil, ClientError("Invalid URL.")
-	}
-	defer body.Close()
+// func getIssue(url string) (*IssueRequestResponse, CustomError) {
+// 	body, err := sendRequest(http.MethodGet, url, nil)
+// 	if err != nil {
+// 		common.LogChainError("error sending get issue request", err)
+// 		return nil, ClientError("Invalid URL.")
+// 	}
+// 	defer body.Close()
 
-	iss := issuer.IssueRequest{}
-	err = common.DecodeJSON(body, &iss)
-	if err != nil {
-		common.LogChainError("error decoding get issue response", err)
-		return nil, ClientError("Invalid verify endpoint.")
-	}
+// 	iss := issuer.IssueRequest{}
+// 	err = common.DecodeJSON(body, &iss)
+// 	if err != nil {
+// 		common.LogChainError("error decoding get issue response", err)
+// 		return nil, ClientError("Invalid verify endpoint.")
+// 	}
 
-	doc, err := common.LoadDIDDocumentFromURI(iss.Issuer.DID)
-	if err != nil {
-		common.LogChainError("error loading DID doc", err)
-		return nil, InternalError()
-	}
+// 	doc, err := common.LoadDIDDocumentFromURI(iss.Issuer.DID)
+// 	if err != nil {
+// 		common.LogChainError("error loading DID doc", err)
+// 		return nil, InternalError()
+// 	}
 
-	DID, err := common.LoadPublicKeyFromDocument(doc)
-	if err != nil {
-		common.LogChainError("error loading public key from DID doc", err)
-		return nil, InternalError()
-	}
+// 	DID, err := common.LoadPublicKeyFromDocument(doc)
+// 	if err != nil {
+// 		common.LogChainError("error loading public key from DID doc", err)
+// 		return nil, InternalError()
+// 	}
 
-	err = common.VerifyStructSignature(DID, &iss.Issuer.Signature, &iss)
-	if err != nil {
-		common.LogChainError("error verifying issuer signature", err)
-		return nil, ClientError("Issuer has invalid signature.")
-	}
+// 	err = common.VerifyStructSignature(DID, &iss.Issuer.Signature, &iss)
+// 	if err != nil {
+// 		common.LogChainError("error verifying issuer signature", err)
+// 		return nil, ClientError("Issuer has invalid signature.")
+// 	}
 
-	res := IssueRequestResponse{
-		Name:    doc.Name,
-		Purpose: iss.Purpose,
-		Domain:  doc.Domain,
-		Fields:  iss.Fields,
-	}
+// 	res := IssueRequestResponse{
+// 		Name:    doc.Name,
+// 		Purpose: iss.Purpose,
+// 		Domain:  doc.Domain,
+// 		Fields:  iss.Fields,
+// 	}
 
-	return &res, NoError()
-}
+// 	return &res, NoError()
+// }
 
 func postIssueHandler(w http.ResponseWriter, req *http.Request) {
 	iss := IssueRequest{}

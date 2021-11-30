@@ -1,8 +1,8 @@
 <template>
-    <div class="ui basic segment">
-        <div v-if="isLoading" class="ui active loader"></div>
-        <slot v-else />
-    </div>
+<div class="ui basic segment">
+    <div v-if="isLoading" class="ui active loader"></div>
+    <slot v-else />
+</div>
 </template>
 
 <script>

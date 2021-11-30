@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"vcd/common"
-	"vcd/verifier"
 )
 
 const PRIVATE_KEY_URI = "wallet/private.key"
@@ -19,8 +18,8 @@ type PresentationRequestResponse struct {
 
 func VerifyHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case http.MethodGet:
-		getVerifyHandler(w, req)
+	// case http.MethodGet:
+	// 	getVerifyHandler(w, req)
 	case http.MethodPost:
 		postVerifyHandler(w, req)
 	default:
@@ -28,68 +27,68 @@ func VerifyHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getVerifyHandler(w http.ResponseWriter, req *http.Request) {
-	pres, cerr := getVerify(req.URL.Query().Get("url"))
-	if cerr.Type == TypeClientError {
-		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
-		return
-	}
-	if cerr.Type == TypeInternalError {
-		common.SendInternalErrorResponse(w)
-		return
-	}
+// func getVerifyHandler(w http.ResponseWriter, req *http.Request) {
+// 	pres, cerr := getVerify(req.URL.Query().Get("url"))
+// 	if cerr.Type == TypeClientError {
+// 		common.SendErrorResponse(w, http.StatusBadRequest, cerr.Message)
+// 		return
+// 	}
+// 	if cerr.Type == TypeInternalError {
+// 		common.SendInternalErrorResponse(w)
+// 		return
+// 	}
 
-	common.SendJSONResponse(w, http.StatusOK, pres)
-}
+// 	common.SendJSONResponse(w, http.StatusOK, pres)
+// }
 
-func getVerify(url string) (*PresentationRequestResponse, CustomError) {
-	body, err := sendRequest(http.MethodGet, url, nil)
-	if err != nil {
-		common.LogChainError("error sending get verify request", err)
-		return nil, ClientError("Invalid URL.")
-	}
-	defer body.Close()
+// func getVerify(url string) (*PresentationRequestResponse, CustomError) {
+// 	body, err := sendRequest(http.MethodGet, url, nil)
+// 	if err != nil {
+// 		common.LogChainError("error sending get verify request", err)
+// 		return nil, ClientError("Invalid URL.")
+// 	}
+// 	defer body.Close()
 
-	pres := verifier.PresentationRequest{}
-	err = common.DecodeJSON(body, &pres)
-	if err != nil {
-		common.LogChainError("error decoding get verify response", err)
-		return nil, ClientError("Invalid verify endpoint.")
-	}
+// 	pres := verifier.PresentationRequest{}
+// 	err = common.DecodeJSON(body, &pres)
+// 	if err != nil {
+// 		common.LogChainError("error decoding get verify response", err)
+// 		return nil, ClientError("Invalid verify endpoint.")
+// 	}
 
-	doc, err := common.LoadDIDDocumentFromURI(pres.Verifier.DID)
-	if err != nil {
-		common.LogChainError("error loading DID doc", err)
-		return nil, InternalError()
-	}
+// 	doc, err := common.LoadDIDDocumentFromURI(pres.Verifier.DID)
+// 	if err != nil {
+// 		common.LogChainError("error loading DID doc", err)
+// 		return nil, InternalError()
+// 	}
 
-	DID, err := common.LoadPublicKeyFromDocument(doc)
-	if err != nil {
-		common.LogChainError("error loading public key from DID doc", err)
-		return nil, InternalError()
-	}
+// 	DID, err := common.LoadPublicKeyFromDocument(doc)
+// 	if err != nil {
+// 		common.LogChainError("error loading public key from DID doc", err)
+// 		return nil, InternalError()
+// 	}
 
-	err = common.VerifyStructSignature(DID, &pres.Verifier.Signature, &pres)
-	if err != nil {
-		common.LogChainError("error verifying verifier signature", err)
-		return nil, ClientError("Verifier has invalid signature.")
-	}
+// 	err = common.VerifyStructSignature(DID, &pres.Verifier.Signature, &pres)
+// 	if err != nil {
+// 		common.LogChainError("error verifying verifier signature", err)
+// 		return nil, ClientError("Verifier has invalid signature.")
+// 	}
 
-	res := PresentationRequestResponse{
-		Name:            doc.Name,
-		Purpose:         pres.Purpose,
-		Domain:          doc.Domain,
-		Issuer:          pres.Issuer,
-		TrustedByIssuer: false,
-	}
+// 	res := PresentationRequestResponse{
+// 		Name:            doc.Name,
+// 		Purpose:         pres.Purpose,
+// 		Domain:          doc.Domain,
+// 		Issuer:          pres.Issuer,
+// 		TrustedByIssuer: false,
+// 	}
 
-	err = common.VerifyDIDDocumentSignature(doc, pres.Issuer)
-	if err == nil {
-		res.TrustedByIssuer = true
-	}
+// 	err = common.VerifyDIDDocumentSignature(doc, pres.Issuer)
+// 	if err == nil {
+// 		res.TrustedByIssuer = true
+// 	}
 
-	return &res, NoError()
-}
+// 	return &res, NoError()
+// }
 
 func postVerifyHandler(w http.ResponseWriter, req *http.Request) {
 	body := map[string]string{}

@@ -10,6 +10,16 @@ type Signature struct {
 	Signature string `json:"signature,omitempty"`
 }
 
+type PresentationRequest struct {
+	Type   string            `json:"type"`
+	Fields map[string]string `json:"fields,omitempty"`
+
+	Purpose string `json:"purpose"`
+
+	Issuer string    `json:"issuer,omitempty"`
+	Entity Signature `json:"entity"`
+}
+
 type VerifiableCredential struct {
 	Credentials map[string]string `json:"credentials"`
 

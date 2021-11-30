@@ -6,15 +6,8 @@ import (
 	"vcd/common"
 )
 
-type IssueRequest struct {
-	Purpose string            `json:"purpose"`
-	Fields  map[string]string `json:"fields"`
-	Issuer  common.Signature  `json:"issuer"`
-	Subject common.Signature  `json:"subject"`
-}
-
 type Issuer interface {
-	CreateIssueRequest() IssueRequest
+	CreatePresentationRequest() common.PresentationRequest
 	CreateVerifiableCredentials(creds *common.VerifiableCredential) error
 }
 
@@ -25,16 +18,16 @@ type IssuerService struct {
 }
 
 func (s IssuerService) GetIssueHandler(w http.ResponseWriter, _ *http.Request) {
-	iss := s.Issuer.CreateIssueRequest()
+	pres := s.Issuer.CreatePresentationRequest()
 
-	err := common.SignStruct(s.PrivateKeyURI, &iss.Issuer, &iss)
+	err := common.SignStruct(s.PrivateKeyURI, &pres.Entity, &pres)
 	if err != nil {
-		common.LogChainError("error signing issuer request", err)
+		common.LogChainError("error signing presentation request", err)
 		common.SendInternalErrorResponse(w)
 		return
 	}
 
-	common.SendJSONResponse(w, http.StatusOK, iss)
+	common.SendJSONResponse(w, http.StatusOK, &pres)
 }
 
 func (s IssuerService) PostIssueHandler(w http.ResponseWriter, req *http.Request) {

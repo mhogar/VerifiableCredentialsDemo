@@ -5,8 +5,6 @@ import (
 	"vcd/common"
 )
 
-const VC_URI = "wallet/verifiable-credentials.json"
-
 func GetCredsHandler(w http.ResponseWriter, _ *http.Request) {
 	creds := CredentialsMap{}
 	err := common.LoadJSONFromFile(VC_URI, &creds)

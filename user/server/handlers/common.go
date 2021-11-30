@@ -7,6 +7,8 @@ import (
 	"vcd/common"
 )
 
+const VC_URI = "wallet/verifiable-credentials.json"
+
 type CredentialsMap map[string]common.VerifiableCredential
 
 func sendRequest(method string, url string, body interface{}) (io.ReadCloser, error) {
