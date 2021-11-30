@@ -40,9 +40,15 @@ func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 		Type:       "iss:form",
 		ServiceURL: fmt.Sprintf("http://localhost:%d/issue", port),
 		Purpose:    "Create ID token from login credentials",
-		Fields: map[string]string{
-			"Username": "",
-			"Password": "",
+		Fields: []common.PresentationField{
+			{
+				Name: "Username",
+				Type: "text",
+			},
+			{
+				Name: "Password",
+				Type: "password",
+			},
 		},
 		Entity: common.Signature{
 			DID: issuerDID,
@@ -55,10 +61,10 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 	log.Println("Username:", cred.Credentials["Username"])
 
 	cred.Credentials = map[string]string{
-		"FirstName":     "Alice",
-		"LastName":      "Student",
-		"StudentNumber": "123456",
-		"Email":         "alice@university.ca",
+		"First Name":     "Alice",
+		"Last Name":      "Student",
+		"Student Number": "0123456",
+		"Email":          "alice@university.ca",
 	}
 	return nil
 }

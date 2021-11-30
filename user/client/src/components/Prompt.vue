@@ -6,7 +6,7 @@
             <div class="sub header">{{typeDescription}}</div>
         </h1>
     </div>
-    <div class="ui stackable centered three column grid">
+    <div v-if="!showForm" class="ui stackable centered three column grid">
         <div class="ui raised card">
             <div class="content">
                 <div class="header">{{prompt.name}}</div>
@@ -25,18 +25,20 @@
             </div>
             <div class="extra content">
                 <div class="ui buttons">
-                    <button type="button" class="ui positive button" @click="acceptButtonClicked()">Accept</button>
+                    <button type="button" class="ui positive button" @click="acceptButtonClicked">Accept</button>
                     <div class="or"></div>
-                    <button type="button" class="ui negative button" @click="denyButtonClicked()">Deny</button>
+                    <button type="button" class="ui negative button" @click="denyButtonClicked">Deny</button>
                 </div>
             </div>
         </div>
     </div>
+    <Form v-else :url="prompt.service_url" :fields="prompt.fields" :submitCallback="submitFormCallback" />
 </LoadingSegment>
 </template>
 
 <script>
 import LoadingSegment from './LoadingSegment.vue'
+import Form from './Form.vue'
 
 import alertFactory from '../common/alertFactory'
 import http from '../common/http'
@@ -44,11 +46,12 @@ import http from '../common/http'
 export default {
     data() {
         return {
-            isLoading: false
+            isLoading: false,
+            showForm: false
         }
     },
     components: {
-        LoadingSegment
+        LoadingSegment, Form
     },
     props: {
         prompt: Object,
@@ -61,8 +64,7 @@ export default {
             return type === 'verify' || type === 'iss:cred'
         },
         typeTitle() {
-            const type = this.prompt.type
-            switch (type) {
+            switch (this.prompt.type) {
                 case 'verify':
                     return 'Verify Request'
                 case 'iss:form':
@@ -73,8 +75,7 @@ export default {
             return 'Unknown Type'
         },
         typeDescription() {
-            const type = this.prompt.type
-            switch (type) {
+            switch (this.prompt.type) {
                 case 'verify':
                     return 'Verify a credential.'
                 case 'iss:form':
@@ -91,15 +92,25 @@ export default {
     },
     methods: {
         acceptButtonClicked() {
-            if (this.prompt.type === 'verify') {
-                this.verify()
-                return
+           switch (this.prompt.type) {
+                case 'verify':
+                    this.verify()
+                    return
+                case 'iss:form':
+                    this.showForm = true
+                    return
+                case 'iss:cred':
+                    this.verify()
+                    return
             }
 
-            this.acceptCallback(alertFactory.createSuccessAlert('Issue request accepted!'))
+            this.acceptCallback()
         },
         denyButtonClicked() {
             this.denyCallback(alertFactory.createWarningAlert('Request denied.'))
+        },
+        submitFormCallback(alert) {
+            this.acceptCallback(alert)
         },
         verify() {
             this.isLoading = true
@@ -123,6 +134,8 @@ export default {
                 this.isLoading = false
             })
         },
+        issueCred() {
+        }
     }
 }
 </script>

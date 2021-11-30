@@ -9,10 +9,10 @@ type QueryResponse struct {
 	Type       string `json:"type"`
 	ServiceURL string `json:"service_url"`
 
-	Name    string            `json:"name"`
-	Domain  string            `json:"domain"`
-	Purpose string            `json:"purpose"`
-	Fields  map[string]string `json:"fields,omitempty"`
+	Name    string                     `json:"name"`
+	Domain  string                     `json:"domain"`
+	Purpose string                     `json:"purpose"`
+	Fields  []common.PresentationField `json:"fields,omitempty"`
 
 	Issuer          string `json:"issuer,omitempty"`
 	TrustedByIssuer bool   `json:"trusted_by_issuer"`

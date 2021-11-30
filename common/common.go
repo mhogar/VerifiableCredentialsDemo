@@ -10,12 +10,17 @@ type Signature struct {
 	Signature string `json:"signature,omitempty"`
 }
 
+type PresentationField struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type PresentationRequest struct {
 	Type       string `json:"type"`
 	ServiceURL string `json:"service_url"`
 
-	Purpose string            `json:"purpose"`
-	Fields  map[string]string `json:"fields,omitempty"`
+	Purpose string              `json:"purpose"`
+	Fields  []PresentationField `json:"fields,omitempty"`
 
 	Issuer string    `json:"issuer,omitempty"`
 	Entity Signature `json:"entity"`

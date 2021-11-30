@@ -34,8 +34,7 @@ func main() {
 	http.HandleFunc("/creds", createHandler(http.MethodGet, handlers.GetCredsHandler))
 	http.HandleFunc("/query", createHandler(http.MethodGet, handlers.GetQueryHandler))
 	http.HandleFunc("/verify", createHandler(http.MethodPost, handlers.PostVerifyHandler))
-
-	//http.HandleFunc("/issue", handlers.IssueHandler)
+	http.HandleFunc("/issue", createHandler(http.MethodPost, handlers.PostIssueHandler))
 
 	//run the server
 	fmt.Printf("listening on port %d...\n", *port)

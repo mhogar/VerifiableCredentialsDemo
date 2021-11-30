@@ -8,7 +8,7 @@
             <div v-if="alert" id="alert-box" :class="'ui message ' + this.alert.type">
                 <p class="center aligned">
                     {{alert.text}} 
-                    <i class="close icon" @click="clearAlert()"></i>
+                    <i class="close icon" @click="clearAlert"></i>
                 </p>
             </div>
         </div>
@@ -18,7 +18,9 @@
                    <h2 class="ui center aligned header">Start a Query</h2>
                     <div class="ui fluid action input">
                         <input type="text" v-model="url">
-                        <button type="submit" :class="'ui button' + querySubmitDisabled" @click.prevent="querySubmit()">Submit</button>
+                        <button type="submit" :class="'ui large icon button' + querySubmitDisabled" @click.prevent="querySubmit">
+                            <i class="sign-in icon"></i>
+                        </button>
                     </div>
                 </form>
             </LoadingSegment>
@@ -50,7 +52,7 @@ export default {
             areCredsLoading: false,
             alert: null,
             creds: {},
-            url: 'http://localhost:8084/verify',
+            url: 'http://localhost:8084/issue',
             prompt: null
         }
     },

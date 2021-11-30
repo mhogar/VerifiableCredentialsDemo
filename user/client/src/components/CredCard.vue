@@ -1,5 +1,5 @@
 <template>
-<div class="ui fluid yellow card">
+<div class="ui fluid purple card">
     <div class="content">
         <!-- <div class="header">
             {{content.name}}
