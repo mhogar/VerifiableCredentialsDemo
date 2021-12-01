@@ -19,8 +19,8 @@
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
                 <div v-if="hasCreds" class="ui stackable three column grid">
-                    <div class="column">
-                        <CredCard v-for="(cred, issuer) in creds" :key="issuer" :issuer="issuer" :cred="cred" />
+                    <div v-for="(cred, issuer) in creds" :key="issuer" class="column">
+                        <CredCard :issuer="issuer" :cred="cred" />
                     </div>
                 </div>
                 <h2 v-else class="ui centered aligned header">
