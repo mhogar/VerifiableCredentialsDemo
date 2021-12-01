@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 )
 
 type DIDDocument struct {
@@ -15,7 +16,8 @@ type DIDDocument struct {
 }
 
 func getFullURI(uri string) string {
-	return path.Join("..", "blockchain", uri+".json")
+	tokens := strings.Split(uri, ":")
+	return path.Join("..", "blockchain", tokens[2]+".json")
 }
 
 func LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
