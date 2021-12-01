@@ -10,10 +10,12 @@ type QueryResponse struct {
 	Type       string `json:"type"`
 	ServiceURL string `json:"service_url"`
 
-	Name    string                     `json:"name"`
-	Domain  string                     `json:"domain"`
-	Purpose string                     `json:"purpose"`
-	Fields  []common.PresentationField `json:"fields,omitempty"`
+	DID         string                     `json:"did"`
+	Name        string                     `json:"name"`
+	Domain      string                     `json:"domain"`
+	CredType    string                     `json:"cred_type"`
+	Description string                     `json:"description"`
+	Fields      []common.PresentationField `json:"fields,omitempty"`
 
 	Issuer          string `json:"issuer,omitempty"`
 	TrustedByIssuer bool   `json:"trusted_by_issuer"`
@@ -75,13 +77,15 @@ func getQuery(url string) (*QueryResponse, CustomError) {
 	}
 
 	res := QueryResponse{
-		Type:       pres.Type,
-		ServiceURL: pres.ServiceURL,
-		Name:       doc.Name,
-		Domain:     doc.Domain,
-		Purpose:    pres.Purpose,
-		Fields:     pres.Fields,
-		Issuer:     pres.Issuer,
+		Type:        pres.Type,
+		ServiceURL:  pres.ServiceURL,
+		DID:         pres.Entity.DID,
+		Name:        pres.EntityName,
+		Domain:      doc.Domain,
+		CredType:    pres.CredType,
+		Description: pres.Description,
+		Fields:      pres.Fields,
+		Issuer:      pres.Issuer,
 	}
 
 	if pres.Issuer != "" {

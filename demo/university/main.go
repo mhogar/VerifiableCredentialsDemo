@@ -11,8 +11,9 @@ import (
 	"vcd/verifier"
 )
 
-const issuerDID = "university-issuer"
-const verifierDID = "university-verifier"
+const ISSUER_DID = "did:example:e98e0ae2-5096-4de5-8096-97df8e50cf41"
+const VERIFIER_DID = "did:example:189a2384-cc88-4a72-8c70-c2b7aedda6b8"
+const CRED_TYPE = "Student ID Card"
 
 var port int
 
@@ -20,17 +21,19 @@ type Verifier struct{}
 
 func (Verifier) CreatePresentationRequest() common.PresentationRequest {
 	return common.PresentationRequest{
-		ServiceURL: fmt.Sprintf("http://localhost:%d/verify", port),
-		Purpose:    "Logs first and last name.",
-		Issuer:     issuerDID,
+		ServiceURL:  fmt.Sprintf("http://localhost:%d/verify", port),
+		EntityName:  "University Verifier",
+		CredType:    CRED_TYPE,
+		Description: "Records student information for the purpose of attendance tracking for the exam.",
+		Issuer:      ISSUER_DID,
 		Entity: common.Signature{
-			DID: verifierDID,
+			DID: VERIFIER_DID,
 		},
 	}
 }
 
 func (Verifier) VerifyCredentials(cred *common.VerifiableCredential) error {
-	log.Printf("(Verifier) Verified: %s %s, %s %s", cred.Credentials["FirstName"], cred.Credentials["LastName"], cred.Credentials["StudentNumber"], cred.Credentials["Email"])
+	log.Printf("(Verifier) Verified: %s %s, %s %s", cred.Credentials["First Name"], cred.Credentials["Last Name"], cred.Credentials["Student Number"], cred.Credentials["Email"])
 	return nil
 }
 
@@ -38,9 +41,11 @@ type Issuer struct{}
 
 func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 	return common.PresentationRequest{
-		Type:       "iss:form",
-		ServiceURL: fmt.Sprintf("http://localhost:%d/issue", port),
-		Purpose:    "Create ID token from login credentials",
+		Type:        "iss:form",
+		ServiceURL:  fmt.Sprintf("http://localhost:%d/issue", port),
+		EntityName:  "University Issuer",
+		CredType:    CRED_TYPE,
+		Description: "Authenticate using login information to create a student ID card.",
 		Fields: []common.PresentationField{
 			{
 				Name: "Username",
@@ -52,7 +57,7 @@ func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 			},
 		},
 		Entity: common.Signature{
-			DID: issuerDID,
+			DID: ISSUER_DID,
 		},
 	}
 }
@@ -65,6 +70,7 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 		return errors.New("invalid username and/or password")
 	}
 
+	cred.CredType = CRED_TYPE
 	cred.Credentials = map[string]string{
 		"First Name":     "Alice",
 		"Last Name":      "Student",
@@ -88,7 +94,7 @@ func main() {
 		},
 		IssuerService: issuer.IssuerService{
 			Issuer:        Issuer{},
-			DID:           "university-issuer",
+			DID:           ISSUER_DID,
 			PrivateKeyURI: "university/keys/issuer.private.key",
 		},
 	}

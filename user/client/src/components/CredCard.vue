@@ -1,14 +1,11 @@
 <template>
 <div class="ui fluid purple card">
     <div class="content">
-        <!-- <div class="header">
-            {{content.name}}
+        <div class="header">
+            {{cred.cred_type}}
         </div>
         <div class="meta">
-            {{content.issuer}} ({{content.issuer_did}})
-        </div> -->
-        <div class="header">
-            {{issuer}}
+            Issued by: {{cred.issuer.did}}
         </div>
     </div>
     <div class="content">

@@ -19,14 +19,17 @@ type PresentationRequest struct {
 	Type       string `json:"type"`
 	ServiceURL string `json:"service_url"`
 
-	Purpose string              `json:"purpose"`
-	Fields  []PresentationField `json:"fields,omitempty"`
+	EntityName  string              `json:"entity_name"`
+	CredType    string              `json:"cred_type"`
+	Description string              `json:"description"`
+	Fields      []PresentationField `json:"fields,omitempty"`
 
 	Issuer string    `json:"issuer,omitempty"`
 	Entity Signature `json:"entity"`
 }
 
 type VerifiableCredential struct {
+	CredType    string            `json:"cred_type"`
 	Credentials map[string]string `json:"credentials"`
 
 	Subject Signature `json:"subject"`

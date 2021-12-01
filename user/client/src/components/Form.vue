@@ -70,7 +70,7 @@ export default {
                     return
                 }
 
-                this.submitCallback(alertFactory.createSuccessAlert('Verified!'), true)
+                this.submitCallback(alertFactory.createSuccessAlert('Created Credential!'), true)
             })
             .catch((err) => {
                 console.log(err)

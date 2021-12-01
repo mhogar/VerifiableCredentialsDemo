@@ -6,30 +6,28 @@
             <div class="sub header">{{typeDescription}}</div>
         </h1>
     </div>
-    <div v-if="!showForm" class="ui stackable centered three column grid">
-        <div class="ui raised card">
-            <div class="content">
-                <div class="header">{{prompt.name}}</div>
-                <div class="meta">
-                    <span>{{prompt.domain}}</span>
-                </div>
-                <h4 v-if="showTrusted" class="ui sub header">
-                    Trusted By Issuer:
-                    <i :class="trustedByVerifierIcon"></i>
-                </h4>
+    <div v-if="!showForm" class="ui fluid raised card">
+        <div class="content">
+            <div class="header">{{prompt.name}} - {{prompt.domain}}</div>
+            <div class="meta">
+                <p>{{prompt.did}}</p>
             </div>
-            <div class="content">
-                <div class="description">
-                    <p>{{prompt.purpose}}</p>
-                </div>
+            
+        </div>
+        <div class="content">
+            <div class="description">
+                <p v-if="hasIssuer"><b>Target Issuer: </b>{{prompt.issuer}}</p>
+                <p><b>Credential Type: </b>{{prompt.cred_type}}</p>
+                <p><b>Description: </b>{{prompt.description}}</p>
             </div>
-            <div class="extra content">
-                <div class="ui buttons">
-                    <button type="button" class="ui positive button" @click="acceptButtonClicked">Accept</button>
-                    <div class="or"></div>
-                    <button type="button" class="ui negative button" @click="denyButtonClicked">Deny</button>
-                </div>
-            </div>
+            <h4 v-if="hasIssuer" class="ui sub header">
+                Trusted By Target Issuer:
+                <i :class="trustedByVerifierIcon"></i>
+            </h4>
+        </div>
+        <div class="extra content">
+            <button type="button" class="ui primary button" @click="acceptButtonClicked">Accept</button>
+            <button type="button" class="ui button" @click="denyButtonClicked">Deny</button>
         </div>
     </div>
     <Form v-else :url="prompt.service_url" :fields="prompt.fields" :submitCallback="submitFormCallback" />
@@ -59,7 +57,7 @@ export default {
         denyCallback: Function
     },
     computed: {
-        showTrusted() {
+        hasIssuer() {
             const type = this.prompt.type
             return type === 'verify' || type === 'iss:cred'
         },
