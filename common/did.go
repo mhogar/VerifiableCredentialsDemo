@@ -9,9 +9,8 @@ import (
 )
 
 type DIDDocument struct {
-	Name       string            `json:"name"`
 	Domain     string            `json:"domain"`
-	Route      string            `json:"route"`
+	Routes     map[string]string `json:"routes"`
 	Signatures map[string]string `json:"signatures,omitempty"`
 }
 
@@ -36,7 +35,11 @@ func LoadDIDDocumentFromURI(uri string) (*DIDDocument, error) {
 }
 
 func LoadPublicKeyFromDocument(doc *DIDDocument) ([]byte, error) {
-	url := "http://" + path.Join(doc.Domain, doc.Route)
+	keyRoute, ok := doc.Routes["key"]
+	if !ok {
+		return nil, errors.New("DID doc has no route for public key")
+	}
+	url := "http://" + path.Join(doc.Domain, keyRoute)
 
 	res, err := http.Get(url)
 	if err != nil {

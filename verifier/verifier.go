@@ -6,14 +6,8 @@ import (
 	"vcd/common"
 )
 
-type PresentationRequest struct {
-	Purpose  string           `json:"purpose"`
-	Issuer   string           `json:"issuer"`
-	Verifier common.Signature `json:"verifier"`
-}
-
 type Verifier interface {
-	CreatePresentationRequest() PresentationRequest
+	CreatePresentationRequest() common.PresentationRequest
 	VerifyCredentials(cred *common.VerifiableCredential) error
 }
 
@@ -24,10 +18,11 @@ type VerifierService struct {
 
 func (s VerifierService) GetVerifyHandler(w http.ResponseWriter, _ *http.Request) {
 	pres := s.Verifier.CreatePresentationRequest()
+	pres.Type = "verify"
 
-	err := common.SignStruct(s.PrivateKeyURI, &pres.Verifier, &pres)
+	err := common.SignStruct(s.PrivateKeyURI, &pres.Entity, &pres)
 	if err != nil {
-		log.Println(err)
+		common.LogChainError("error signing presentation request", err)
 		common.SendInternalErrorResponse(w)
 		return
 	}

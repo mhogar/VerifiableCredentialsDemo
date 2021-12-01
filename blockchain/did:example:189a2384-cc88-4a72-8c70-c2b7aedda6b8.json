@@ -1,0 +1,9 @@
+{
+    "domain": "localhost:8084",
+    "routes": {
+        "key": "exam-verifier.cert"
+    },
+    "signatures": {
+        "did:example:e98e0ae2-5096-4de5-8096-97df8e50cf41": "P13YNbVa+wAHdzUCYJ9F4D24W3Ih7IBUZABOoYkA50XIxwXSih6QD2HFS8cz3IaTqg5JICGbvn9mw/vpYMdEKaBYC9Dcxa+3XgzDxXgRsPfhJOeEUkTUuM6UzLi/nRcaHFLdzn45r6no8xMbf6BX2QTXydJjEJbuHJD1ppL39ms"
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "domain": "localhost:8084",
+    "routes": {
+        "key": "issuer.cert"
+    },
+    "signatures": {}
+}
