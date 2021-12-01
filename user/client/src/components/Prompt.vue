@@ -1,11 +1,13 @@
 <template>
-<LoadingSegment :isLoading="isLoading">
+<div>
     <div id="type-header" class="ui basic segment">
         <h1 class="ui center aligned header">
             {{typeTitle}}
             <div class="sub header">{{typeDescription}}</div>
         </h1>
     </div>
+    <Alert ref="alert" />
+    <LoadingSegment :isLoading="isLoading">
     <div v-if="!showForm" class="ui fluid raised card">
         <div class="content">
             <div class="header">{{prompt.name}} - {{prompt.domain}}</div>
@@ -32,9 +34,11 @@
     </div>
     <Form v-else :url="prompt.service_url" :fields="prompt.fields" :submitCallback="submitFormCallback" />
 </LoadingSegment>
+</div>
 </template>
 
 <script>
+import Alert from './Alert.vue'
 import LoadingSegment from './LoadingSegment.vue'
 import Form from './Form.vue'
 
@@ -49,7 +53,7 @@ export default {
         }
     },
     components: {
-        LoadingSegment, Form
+        Alert, LoadingSegment, Form
     },
     props: {
         prompt: Object,
@@ -89,6 +93,9 @@ export default {
         }
     },
     methods: {
+        setAlert(alert) {
+            this.$refs.alert.setAlert(alert)
+        },
         acceptButtonClicked() {
            switch (this.prompt.type) {
                 case 'verify':
@@ -101,8 +108,6 @@ export default {
                     this.verify()
                     return
             }
-
-            this.acceptCallback()
         },
         denyButtonClicked() {
             this.denyCallback(alertFactory.createWarningAlert('Request denied.'))
@@ -118,7 +123,7 @@ export default {
             })
             .then((res) => {
                 if (res.data.error) {
-                    this.acceptCallback(alertFactory.createErrorAlert('Request Failed: ' + res.data.error))
+                    this.setAlert(alertFactory.createErrorAlert('Request Failed: ' + res.data.error))
                     return
                 }
 
@@ -126,7 +131,7 @@ export default {
             })
             .catch((err) => {
                 console.log(err)
-                this.acceptCallback(alertFactory.createInternalErrorAlert())
+                this.setAlert(alertFactory.createInternalErrorAlert())
             })
             .then(() => {
                 this.isLoading = false

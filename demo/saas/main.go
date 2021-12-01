@@ -31,8 +31,7 @@ func (Verifier) CreatePresentationRequest() common.PresentationRequest {
 }
 
 func (Verifier) VerifyCredentials(cred *common.VerifiableCredential) error {
-	//TODO: find way to pass session id in verify pres request
-	log.Printf("(Verifier) Session active (%s): %s", cred.Credentials["Session"], cred.Credentials["Username"])
+	log.Println("(Verifier) New session:", cred.Credentials["Username"])
 	return nil
 }
 

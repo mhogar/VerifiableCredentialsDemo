@@ -3,5 +3,7 @@
     "routes": {
         "key": "verifier.cert"
     },
-    "signatures": {}
+    "signatures": {
+        "did:example:bd395203-9b81-4808-b259-7ff410aa7f73": "mYm/LGEpOroorNJggbuMvVi8ZQlcOp6rol8tFnQqttPgGR8dmb9gYs6vFbSsqc/l2mqU2T3tX/WN3ctMsN+N5o+tYDcP0qAjAU4wrLJU6hv651ZDUYjwUAPohKH+QAgypr1hhAMI4ZbNEtNTJdlOhqJM1G+SwTy0GeajvhkiE0k"
+    }
 }
