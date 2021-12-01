@@ -15,26 +15,6 @@ const CRED_TYPE = "Account Credentials"
 
 const port = 8085
 
-type Verifier struct{}
-
-func (Verifier) CreatePresentationRequest() common.PresentationRequest {
-	return common.PresentationRequest{
-		ServiceURL:  fmt.Sprintf("http://localhost:%d/verify", port),
-		EntityName:  "SaaS Login",
-		CredType:    CRED_TYPE,
-		Description: "Creates a new session for the provided account",
-		Issuer:      ISSUER_DID,
-		Entity: common.Signature{
-			DID: VERIFIER_DID,
-		},
-	}
-}
-
-func (Verifier) VerifyCredentials(cred *common.VerifiableCredential) error {
-	log.Println("(Verifier) New session:", cred.Credentials["Username"])
-	return nil
-}
-
 type Issuer struct{}
 
 func (Issuer) CreatePresentationRequest() common.PresentationRequest {
@@ -71,12 +51,34 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 	return nil
 }
 
+type LoginVerifier struct{}
+
+func (LoginVerifier) CreatePresentationRequest() common.PresentationRequest {
+	return common.PresentationRequest{
+		ServiceURL:  fmt.Sprintf("http://localhost:%d/verify/login", port),
+		EntityName:  "SaaS Login",
+		CredType:    CRED_TYPE,
+		Description: "Creates a new session for the provided account",
+		Issuer:      ISSUER_DID,
+		Entity: common.Signature{
+			DID: VERIFIER_DID,
+		},
+	}
+}
+
+func (LoginVerifier) VerifyCredentials(cred *common.VerifiableCredential) error {
+	log.Println("(Verifier) New session:", cred.Credentials["Username"])
+	return nil
+}
+
 func main() {
 	server := demo.DemoServer{
 		PublicURL: "./saas/public",
-		VerifierService: verifier.VerifierService{
-			Verifier:      Verifier{},
-			PrivateKeyURI: "saas/keys/verifier.private.key",
+		VerifierServices: map[string]verifier.VerifierService{
+			"login": {
+				Verifier:      LoginVerifier{},
+				PrivateKeyURI: "saas/keys/verifier.private.key",
+			},
 		},
 		IssuerService: issuer.IssuerService{
 			Issuer:        Issuer{},
