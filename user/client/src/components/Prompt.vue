@@ -116,6 +116,8 @@ export default {
             this.acceptCallback(alert, reloadCreds)
         },
         verify() {
+            this.setAlert(null)
+
             this.isLoading = true
             http.post('/verify', {
                 service_url: this.prompt.service_url,

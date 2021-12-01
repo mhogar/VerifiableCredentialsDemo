@@ -1,7 +1,7 @@
 <template>
 <div>
     <div id="navbar" class="ui fixed borderless huge inverted menu">
-        <div class="header item"><b>VCD</b></div>
+        <div class="header item"><b>Verifiable Credentials Demo</b></div>
     </div>
     <div class="ui container">
         <Alert ref="alert" />
@@ -59,8 +59,11 @@ export default {
         this.loadCreds()
     },
     computed: {
+        canSubmit() {
+            return this.url
+        },
         querySubmitDisabled() {
-            return this.url ? '' : ' disabled'
+            return this.canSubmit ? '' : ' disabled'
         },
         hasCreds() {
             return Object.keys(this.creds).length > 0
@@ -90,6 +93,12 @@ export default {
             })
         },
         querySubmit() {
+            if (!this.canSubmit) {
+                return
+            }
+
+            this.setAlert(null)
+
             this.isQueryLoading = true
             http.get('/query', {
                 url: this.url

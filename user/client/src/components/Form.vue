@@ -59,6 +59,8 @@ export default {
                 return
             }
 
+            this.setAlert(null)
+
             this.isLoading = true
             http.post('/issue', {
                 service_url: this.url,
