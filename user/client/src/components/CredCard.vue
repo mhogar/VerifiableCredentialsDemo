@@ -21,7 +21,6 @@
 <script>
 export default {
     props: {
-        issuer: String,
         cred: Object
     }
 }

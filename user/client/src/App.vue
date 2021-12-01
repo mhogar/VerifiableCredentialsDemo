@@ -18,9 +18,12 @@
                 </form>
             </LoadingSegment>
             <LoadingSegment :isLoading="areCredsLoading">
-                <div v-if="hasCreds" class="ui stackable three column grid">
-                    <div v-for="(cred, issuer) in creds" :key="issuer" class="column">
-                        <CredCard :issuer="issuer" :cred="cred" />
+                <div v-if="hasCreds">
+                    <h3 class="ui header">Created Credentials:</h3>
+                    <div class="ui stackable three column grid">
+                        <div v-for="(cred, issuer) in creds" :key="issuer" class="column">
+                            <CredCard :issuer="issuer" :cred="cred" />
+                        </div>
                     </div>
                 </div>
                 <h2 v-else class="ui centered aligned header">
@@ -140,7 +143,7 @@ export default {
 
 <style>
 body {
-    padding-top: 4rem;
+    padding-top: 6rem;
 }
 
 #navbar {

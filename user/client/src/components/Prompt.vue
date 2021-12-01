@@ -7,39 +7,50 @@
         </h1>
     </div>
     <Alert ref="alert" />
-    <LoadingSegment :isLoading="isLoading">
-    <div v-if="!showForm" class="ui fluid raised card">
-        <div class="content">
-            <div class="header">{{prompt.name}} - {{prompt.domain}}</div>
-            <div class="meta">
-                <p>{{prompt.did}}</p>
+    <LoadingSegment :isLoading="isPromptLoading">
+        <div v-if="!showForm">
+            <h3 class="ui header">{{entityType}} Information:</h3>
+            <div  class="ui fluid raised card">
+                <div class="content">
+                    <div class="header">{{prompt.name}} - {{prompt.domain}}</div>
+                    <div class="meta">
+                        <p>{{prompt.did}}</p>
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="description">
+                        <p v-if="hasIssuer"><b>Target Issuer: </b>{{prompt.issuer}}</p>
+                        <p><b>Credential Type: </b>{{prompt.cred_type}}</p>
+                        <p><b>Description: </b>{{prompt.description}}</p>
+                    </div>
+                    <h4 v-if="hasIssuer" class="ui sub header">
+                        Trusted By Target Issuer:
+                        <i :class="trustedByVerifierIcon"></i>
+                    </h4>
+                </div>
+                <div class="extra content">
+                    <button type="button" :class="'ui primary button' + acceptButtonDisabled" @click="acceptButtonClicked">Accept</button>
+                    <button type="button" class="ui button" @click="denyButtonClicked">Deny</button>
+                </div>
             </div>
-            
         </div>
-        <div class="content">
-            <div class="description">
-                <p v-if="hasIssuer"><b>Target Issuer: </b>{{prompt.issuer}}</p>
-                <p><b>Credential Type: </b>{{prompt.cred_type}}</p>
-                <p><b>Description: </b>{{prompt.description}}</p>
+        <Form v-else :url="prompt.service_url" :fields="prompt.fields" :submitCallback="submitFormCallback" />
+    </LoadingSegment>
+    <LoadingSegment v-if="hasIssuer && cred" :isLoading="isCredLoading">
+        <h3 class="ui header">Applicable Credentials:</h3>
+        <div class="ui stackable three column grid">
+            <div class="column">
+                <CredCard :cred="cred" />
             </div>
-            <h4 v-if="hasIssuer" class="ui sub header">
-                Trusted By Target Issuer:
-                <i :class="trustedByVerifierIcon"></i>
-            </h4>
         </div>
-        <div class="extra content">
-            <button type="button" class="ui primary button" @click="acceptButtonClicked">Accept</button>
-            <button type="button" class="ui button" @click="denyButtonClicked">Deny</button>
-        </div>
-    </div>
-    <Form v-else :url="prompt.service_url" :fields="prompt.fields" :submitCallback="submitFormCallback" />
-</LoadingSegment>
+    </LoadingSegment>
 </div>
 </template>
 
 <script>
 import Alert from './Alert.vue'
 import LoadingSegment from './LoadingSegment.vue'
+import CredCard from './CredCard.vue'
 import Form from './Form.vue'
 
 import alertFactory from '../common/alertFactory'
@@ -48,22 +59,32 @@ import http from '../common/http'
 export default {
     data() {
         return {
-            isLoading: false,
-            showForm: false
+            isPromptLoading: false,
+            isCredLoading: false,
+            showForm: false,
+            cred: null
         }
     },
     components: {
-        Alert, LoadingSegment, Form
+        Alert, LoadingSegment, CredCard, Form
     },
     props: {
         prompt: Object,
         acceptCallback: Function,
         denyCallback: Function
     },
+    created() {
+        if (this.hasIssuer) {
+            this.loadCred()
+        }
+    },
     computed: {
         hasIssuer() {
             const type = this.prompt.type
             return type === 'verify' || type === 'iss:cred'
+        },
+        acceptButtonDisabled() {
+            return this.hasIssuer && !this.cred ? ' disabled' : ''
         },
         typeTitle() {
             switch (this.prompt.type) {
@@ -72,9 +93,9 @@ export default {
                 case 'iss:form':
                 case 'iss:cred':
                     return 'Issue Request'
+                default:
+                    return ''
             }
-            
-            return 'Unknown Type'
         },
         typeDescription() {
             switch (this.prompt.type) {
@@ -84,9 +105,20 @@ export default {
                     return 'Create a credential by filling out a form.'
                 case 'iss:cred':
                     return 'Create a new credential from an existing one.'
+                default:
+                    return ''
             }
-            
-            return ''
+        },
+        entityType() {
+            switch (this.prompt.type) {
+                case 'verify':
+                    return 'Verifier'
+                case 'iss:form':
+                case 'iss:cred':
+                    return 'Issuer'
+                default:
+                    return ''
+            }
         },
         trustedByVerifierIcon() {
             return this.prompt.trusted_by_issuer ? 'check circle green icon' : 'close red icon'
@@ -117,8 +149,28 @@ export default {
         submitFormCallback(alert, reloadCreds) {
             this.acceptCallback(alert, reloadCreds)
         },
+        loadCred() {
+            this.isCredLoading = true
+            http.get('/cred', {
+                id: this.prompt.issuer
+            })
+            .then((res) => {
+                if (!res.data.issuer) {
+                    this.setAlert(alertFactory.createWarningAlert('No credentials for target issuer found.'))
+                    return
+                }
+                this.cred = res.data
+            })
+            .catch((err) => {
+                console.log(err)
+                this.setAlert(alertFactory.createInternalErrorAlert())
+            })
+            .then(() => {
+                this.isCredLoading = false
+            })
+        },
         verify() {
-            this.isLoading = true
+            this.isPromptLoading = true
             http.post('/verify', {
                 service_url: this.prompt.service_url,
                 credential_id: this.prompt.issuer
@@ -136,11 +188,11 @@ export default {
                 this.setAlert(alertFactory.createInternalErrorAlert())
             })
             .then(() => {
-                this.isLoading = false
+                this.isPromptLoading = false
             })
         },
         issueCred() {
-            this.isLoading = true
+            this.isPromptLoading = true
             http.post('/issue', {
                 service_url: this.prompt.service_url,
                 type: 'iss:cred',
@@ -159,7 +211,7 @@ export default {
                 this.setAlert(alertFactory.createInternalErrorAlert())
             })
             .then(() => {
-                this.isLoading = false
+                this.isPromptLoading = false
             })
         }
     }

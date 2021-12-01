@@ -32,6 +32,7 @@ func main() {
 
 	//setup routes
 	http.HandleFunc("/creds", createHandler(http.MethodGet, handlers.GetCredsHandler))
+	http.HandleFunc("/cred", createHandler(http.MethodGet, handlers.GetCredHandler))
 	http.HandleFunc("/query", createHandler(http.MethodGet, handlers.GetQueryHandler))
 	http.HandleFunc("/verify", createHandler(http.MethodPost, handlers.PostVerifyHandler))
 	http.HandleFunc("/issue", createHandler(http.MethodPost, handlers.PostIssueHandler))

@@ -1,10 +1,12 @@
 <template>
-<div class="ui center aligned basic segment">
-    <div v-if="alert" :class="'ui message ' + alert.type">
-        <p class="center aligned">
-            {{alert.text}} 
-            <i class="close icon" @click="clearAlert"></i>
-        </p>
+<div>
+    <div v-if="alert" class="ui center aligned basic segment">
+        <div :class="'ui message ' + alert.type">
+            <p class="center aligned">
+                {{alert.text}} 
+                <i class="close icon" @click="clearAlert"></i>
+            </p>
+        </div>
     </div>
 </div>
 </template>
