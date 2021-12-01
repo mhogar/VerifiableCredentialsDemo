@@ -48,7 +48,7 @@ export default {
             isQueryLoading: false,
             areCredsLoading: false,
             creds: {},
-            url: 'http://localhost:8084/issue',
+            url: 'http://localhost:8086/issue',
             prompt: null
         }
     },

@@ -64,6 +64,7 @@ export default {
             this.isLoading = true
             http.post('/issue', {
                 service_url: this.url,
+                type: 'iss:form',
                 fields: this.values
             })
             .then((res) => {

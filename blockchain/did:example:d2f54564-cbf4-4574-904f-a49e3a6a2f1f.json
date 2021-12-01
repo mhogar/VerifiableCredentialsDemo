@@ -1,0 +1,9 @@
+{
+    "domain": "localhost:8086",
+    "routes": {
+        "key": "issuer.cert"
+    },
+    "signatures": {
+        "did:example:e98e0ae2-5096-4de5-8096-97df8e50cf41": "eu/TMNtI560/xJGxPeVCsxwv6vxwZ6VlUrBfrLsN9ypcy4UPtybV1AJ1C1m3ZD26dlF4MV5ZH/JCmeOTe1dsNA4zc6BESO09LJMerF0YHuLphEzRRHl6lvd3k7t8fLt0i5y+NaRzrRN5ZNX5LKT/bZJUek/AcnQo8l1D1L/XS9U"
+    }
+}

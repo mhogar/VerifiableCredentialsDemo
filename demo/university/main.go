@@ -42,12 +42,12 @@ func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 	}
 }
 
-func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) error {
+func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) (*common.VerifiableCredential, error) {
 	log.Println("(Issuer) Login attempt:", cred.Credentials["Username"])
 
 	//NOTE: in real environment would verify login properly
 	if cred.Credentials["Username"] != "username" || cred.Credentials["Password"] != "password" {
-		return errors.New("invalid username and/or password")
+		return nil, errors.New("invalid username and/or password")
 	}
 
 	cred.CredType = CRED_TYPE
@@ -57,7 +57,7 @@ func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) err
 		"Student Number": "0123456",
 		"Email":          "alice@university.ca",
 	}
-	return nil
+	return cred, nil
 }
 
 type ExamVerifier struct{}
@@ -103,6 +103,11 @@ func (EventVerifier) VerifyCredentials(cred *common.VerifiableCredential) error 
 func main() {
 	server := demo.DemoServer{
 		PublicURL: "./university/public",
+		IssuerService: issuer.IssuerService{
+			Issuer:        Issuer{},
+			DID:           ISSUER_DID,
+			PrivateKeyURI: "university/keys/issuer.private.key",
+		},
 		VerifierServices: map[string]verifier.VerifierService{
 			"exam": {
 				Verifier:      ExamVerifier{},
@@ -112,11 +117,6 @@ func main() {
 				Verifier:      EventVerifier{},
 				PrivateKeyURI: "university/keys/event-verifier.private.key",
 			},
-		},
-		IssuerService: issuer.IssuerService{
-			Issuer:        Issuer{},
-			DID:           ISSUER_DID,
-			PrivateKeyURI: "university/keys/issuer.private.key",
 		},
 	}
 	server.RunServer(port)

@@ -97,6 +97,8 @@ export default {
             this.$refs.alert.setAlert(alert)
         },
         acceptButtonClicked() {
+            this.setAlert(null)
+
            switch (this.prompt.type) {
                 case 'verify':
                     this.verify()
@@ -105,7 +107,7 @@ export default {
                     this.showForm = true
                     return
                 case 'iss:cred':
-                    this.verify()
+                    this.issueCred()
                     return
             }
         },
@@ -116,8 +118,6 @@ export default {
             this.acceptCallback(alert, reloadCreds)
         },
         verify() {
-            this.setAlert(null)
-
             this.isLoading = true
             http.post('/verify', {
                 service_url: this.prompt.service_url,
@@ -140,6 +140,27 @@ export default {
             })
         },
         issueCred() {
+            this.isLoading = true
+            http.post('/issue', {
+                service_url: this.prompt.service_url,
+                type: 'iss:cred',
+                credential_id: this.prompt.issuer
+            })
+            .then((res) => {
+                if (res.data.error) {
+                    this.setAlert(alertFactory.createErrorAlert('Create VC Failed: ' + res.data.error))
+                    return
+                }
+
+                this.acceptCallback(alertFactory.createSuccessAlert('Created Credential!'), true)
+            })
+            .catch((err) => {
+                console.log(err)
+                this.setAlert(alertFactory.createInternalErrorAlert())
+            })
+            .then(() => {
+                this.isLoading = false
+            })
         }
     }
 }

@@ -44,11 +44,11 @@ func (Issuer) CreatePresentationRequest() common.PresentationRequest {
 	}
 }
 
-func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) error {
+func (Issuer) CreateVerifiableCredentials(cred *common.VerifiableCredential) (*common.VerifiableCredential, error) {
 	log.Println("(Issuer) Account Created:", cred.Credentials["Username"])
 
 	cred.CredType = CRED_TYPE
-	return nil
+	return cred, nil
 }
 
 type LoginVerifier struct{}
@@ -74,16 +74,16 @@ func (LoginVerifier) VerifyCredentials(cred *common.VerifiableCredential) error 
 func main() {
 	server := demo.DemoServer{
 		PublicURL: "./saas/public",
+		IssuerService: issuer.IssuerService{
+			Issuer:        Issuer{},
+			DID:           ISSUER_DID,
+			PrivateKeyURI: "saas/keys/issuer.private.key",
+		},
 		VerifierServices: map[string]verifier.VerifierService{
 			"login": {
 				Verifier:      LoginVerifier{},
 				PrivateKeyURI: "saas/keys/verifier.private.key",
 			},
-		},
-		IssuerService: issuer.IssuerService{
-			Issuer:        Issuer{},
-			DID:           ISSUER_DID,
-			PrivateKeyURI: "saas/keys/issuer.private.key",
 		},
 	}
 	server.RunServer(port)

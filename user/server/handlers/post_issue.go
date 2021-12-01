@@ -10,8 +10,10 @@ import (
 const DID_URI = "wallet/DID.cert"
 
 type IssuePostBody struct {
-	ServiceURL string            `json:"service_url"`
-	Fields     map[string]string `json:"fields"`
+	ServiceURL   string            `json:"service_url"`
+	Type         string            `json:"type"`
+	Fields       map[string]string `json:"fields,omitempty"`
+	CredentialID string            `json:"credential_id,omitempty"`
 }
 
 func PostIssueHandler(w http.ResponseWriter, req *http.Request) {
@@ -40,16 +42,32 @@ func PostIssueHandler(w http.ResponseWriter, req *http.Request) {
 func postIssue(body *IssuePostBody) CustomError {
 	cred := common.VerifiableCredential{}
 
-	bytes, err := os.ReadFile(DID_URI)
-	if err != nil {
-		common.LogChainError("error reading DID file", err)
-		return InternalError()
+	if body.Type == "iss:form" {
+		bytes, err := os.ReadFile(DID_URI)
+		if err != nil {
+			common.LogChainError("error reading DID file", err)
+			return InternalError()
+		}
+		cred.Subject.DID = string(bytes)
+
+		cred.Credentials = body.Fields
+
+	} else { //iss:cred
+		creds, err := loadVerifiableCredentials()
+		if err != nil {
+			common.LogChainError("error loading verifiable credentials", err)
+			return InternalError()
+		}
+
+		var ok bool
+		cred, ok = (*creds)[body.CredentialID]
+		if !ok {
+			log.Println("credential with id", body.CredentialID, "no found")
+			return ClientError("No credential found for ID.")
+		}
 	}
-	cred.Subject.DID = string(bytes)
 
-	cred.Credentials = body.Fields
-
-	err = common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, cred)
+	err := common.SignStruct(PRIVATE_KEY_URI, &cred.Subject, cred)
 	if err != nil {
 		common.LogChainError("error signing issue request", err)
 		return InternalError()
@@ -71,7 +89,7 @@ func postIssue(body *IssuePostBody) CustomError {
 		return InternalError()
 	}
 
-	creds := map[string]common.VerifiableCredential{}
+	creds := CredentialsMap{}
 	err = common.LoadJSONFromFile(VC_URI, &creds)
 	if err != nil {
 		common.LogChainError("error loading verifiable credentials", err)
