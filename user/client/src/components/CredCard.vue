@@ -1,5 +1,5 @@
 <template>
-<div class="ui fluid purple card">
+<div class="ui fluid raised card">
     <div class="content">
         <div class="header">
             {{cred.cred_type}}
@@ -25,3 +25,9 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.ui.card {
+    background-color: aliceblue;
+}
+</style>
