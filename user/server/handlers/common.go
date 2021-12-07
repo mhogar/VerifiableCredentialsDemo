@@ -31,6 +31,10 @@ func sendRequest(method string, url string, body interface{}) (io.ReadCloser, Cu
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
 
+		if res.StatusCode == http.StatusNotFound {
+			return nil, ClientError("invalid endpoint."), errors.New("404 not found error from server")
+		}
+
 		result := common.ErrorResponse{}
 		common.DecodeJSON(res.Body, &result)
 

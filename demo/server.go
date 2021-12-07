@@ -39,15 +39,15 @@ func (DemoServer) createVerifyHandler(v verifier.VerifierService) http.HandlerFu
 }
 
 func (s DemoServer) RunServer(port int) {
-	//setup routes
 	http.Handle("/", http.FileServer(http.Dir(s.PublicURL)))
+
 	http.HandleFunc("/issue", s.issueHandler)
+	fmt.Printf("- http://localhost:%d/issue\n", port)
 
 	for key, val := range s.VerifierServices {
 		http.HandleFunc("/verify/"+key, s.createVerifyHandler(val))
+		fmt.Printf("- http://localhost:%d/verify/%s\n", port, key)
 	}
 
-	//run the server
-	fmt.Printf("listening on port %d...\n", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
